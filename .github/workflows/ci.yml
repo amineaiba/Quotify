@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env:
+          POSTGRES_USER: quotify
+          POSTGRES_PASSWORD: quotify
+          POSTGRES_DB: quotify
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U quotify -d quotify"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://quotify:quotify@localhost:5432/quotify
+      # Not a real key. Nothing in the test suite calls Gemini — evals do,
+      # and evals don't run here (see evals/recall_at_k.py, CLAUDE.md).
+      GEMINI_API_KEY: ci-placeholder
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+
+      - run: uv sync --frozen
+
+      - run: uv run ruff check .
+
+      - run: uv run pytest

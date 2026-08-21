@@ -12,8 +12,22 @@ calculates the price.
 
 ## Stack
 
-Python, FastAPI, PostgreSQL, Docker, Gemini
+Python, FastAPI, PostgreSQL + pgvector, SQLAlchemy + Alembic, Docker, Gemini
+
+## Run it
+
+```
+cp .env.example .env        # fill in GEMINI_API_KEY
+docker compose up -d --build
+docker compose exec api alembic upgrade head
+docker compose exec api python scripts/seed_catalog.py
+docker compose exec api pytest
+```
+
+API is at `http://localhost:8000`, health check at `/health`.
+
+Check retrieval quality: `docker compose exec api python evals/recall_at_k.py`
 
 ## Status
 
-Just started.
+Catalog search is live: `POST /api/v1/catalog/search`. Next: `calc_price`.

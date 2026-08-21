@@ -1,0 +1,33 @@
+# --- secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- virtualenvs ---
+.venv/
+venv/
+
+# --- uv ---
+# lockfile IS committed (uv.lock) — only local cache/build junk ignored here
+.uv/
+
+# --- editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Docker ---
+*.pid
+
+# --- Alembic (nothing to ignore today, migrations are committed) ---

@@ -1,0 +1,386 @@
+[
+  {
+    "id": 0,
+    "name": "Flyer A5 quadri recto",
+    "unit": "flyer",
+    "tiers": [
+      {
+        "min_qty": 100,
+        "unit_price": 22
+      },
+      {
+        "min_qty": 500,
+        "unit_price": 14
+      },
+      {
+        "min_qty": 1000,
+        "unit_price": 10
+      },
+      {
+        "min_qty": 5000,
+        "unit_price": 7
+      }
+    ]
+  },
+  {
+    "id": 1,
+    "name": "Flyer A5 quadri recto-verso",
+    "unit": "flyer",
+    "tiers": [
+      {
+        "min_qty": 100,
+        "unit_price": 30
+      },
+      {
+        "min_qty": 500,
+        "unit_price": 19
+      },
+      {
+        "min_qty": 1000,
+        "unit_price": 14
+      },
+      {
+        "min_qty": 5000,
+        "unit_price": 10
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Flyer A6 quadri recto",
+    "unit": "flyer",
+    "tiers": [
+      {
+        "min_qty": 100,
+        "unit_price": 15
+      },
+      {
+        "min_qty": 500,
+        "unit_price": 9
+      },
+      {
+        "min_qty": 1000,
+        "unit_price": 7
+      },
+      {
+        "min_qty": 5000,
+        "unit_price": 5
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Carte de visite standard 350g",
+    "unit": "carte",
+    "tiers": [
+      {
+        "min_qty": 100,
+        "unit_price": 18
+      },
+      {
+        "min_qty": 500,
+        "unit_price": 11
+      },
+      {
+        "min_qty": 1000,
+        "unit_price": 8
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Carte de visite pelliculee mate",
+    "unit": "carte",
+    "tiers": [
+      {
+        "min_qty": 100,
+        "unit_price": 28
+      },
+      {
+        "min_qty": 500,
+        "unit_price": 17
+      },
+      {
+        "min_qty": 1000,
+        "unit_price": 13
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Affiche A3 quadri",
+    "unit": "affiche",
+    "tiers": [
+      {
+        "min_qty": 10,
+        "unit_price": 180
+      },
+      {
+        "min_qty": 50,
+        "unit_price": 120
+      },
+      {
+        "min_qty": 100,
+        "unit_price": 90
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "name": "Affiche A2 quadri",
+    "unit": "affiche",
+    "tiers": [
+      {
+        "min_qty": 10,
+        "unit_price": 320
+      },
+      {
+        "min_qty": 50,
+        "unit_price": 220
+      },
+      {
+        "min_qty": 100,
+        "unit_price": 170
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "name": "Banderole bache 1x3m",
+    "unit": "banderole",
+    "tiers": [
+      {
+        "min_qty": 1,
+        "unit_price": 3500
+      },
+      {
+        "min_qty": 5,
+        "unit_price": 2900
+      },
+      {
+        "min_qty": 10,
+        "unit_price": 2500
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "name": "Roll-up 85x200cm avec housse",
+    "unit": "roll-up",
+    "tiers": [
+      {
+        "min_qty": 1,
+        "unit_price": 8500
+      },
+      {
+        "min_qty": 5,
+        "unit_price": 7200
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "name": "Autocollant vinyle rond 5cm",
+    "unit": "autocollant",
+    "tiers": [
+      {
+        "min_qty": 100,
+        "unit_price": 25
+      },
+      {
+        "min_qty": 500,
+        "unit_price": 16
+      },
+      {
+        "min_qty": 1000,
+        "unit_price": 12
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "name": "T-shirt coton serigraphie 1 face",
+    "unit": "t-shirt",
+    "tiers": [
+      {
+        "min_qty": 10,
+        "unit_price": 950
+      },
+      {
+        "min_qty": 50,
+        "unit_price": 780
+      },
+      {
+        "min_qty": 100,
+        "unit_price": 650
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "name": "Mug ceramique personnalise",
+    "unit": "mug",
+    "tiers": [
+      {
+        "min_qty": 10,
+        "unit_price": 700
+      },
+      {
+        "min_qty": 50,
+        "unit_price": 580
+      },
+      {
+        "min_qty": 100,
+        "unit_price": 500
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "name": "Depliant 3 volets A4",
+    "unit": "depliant",
+    "tiers": [
+      {
+        "min_qty": 100,
+        "unit_price": 55
+      },
+      {
+        "min_qty": 500,
+        "unit_price": 38
+      },
+      {
+        "min_qty": 1000,
+        "unit_price": 30
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "name": "Catalogue A4 broche 16 pages",
+    "unit": "catalogue",
+    "tiers": [
+      {
+        "min_qty": 50,
+        "unit_price": 420
+      },
+      {
+        "min_qty": 100,
+        "unit_price": 340
+      },
+      {
+        "min_qty": 500,
+        "unit_price": 260
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "name": "Bloc-notes A5 50 feuilles",
+    "unit": "bloc",
+    "tiers": [
+      {
+        "min_qty": 50,
+        "unit_price": 190
+      },
+      {
+        "min_qty": 100,
+        "unit_price": 150
+      },
+      {
+        "min_qty": 500,
+        "unit_price": 120
+      }
+    ]
+  },
+  {
+    "id": 15,
+    "name": "Enveloppe imprimee format DL",
+    "unit": "enveloppe",
+    "tiers": [
+      {
+        "min_qty": 100,
+        "unit_price": 20
+      },
+      {
+        "min_qty": 500,
+        "unit_price": 13
+      },
+      {
+        "min_qty": 1000,
+        "unit_price": 10
+      }
+    ]
+  },
+  {
+    "id": 16,
+    "name": "Papier en-tete A4 90g",
+    "unit": "feuille",
+    "tiers": [
+      {
+        "min_qty": 100,
+        "unit_price": 16
+      },
+      {
+        "min_qty": 500,
+        "unit_price": 10
+      },
+      {
+        "min_qty": 1000,
+        "unit_price": 8
+      }
+    ]
+  },
+  {
+    "id": 17,
+    "name": "Tampon encreur automatique",
+    "unit": "tampon",
+    "tiers": [
+      {
+        "min_qty": 1,
+        "unit_price": 2200
+      },
+      {
+        "min_qty": 5,
+        "unit_price": 1800
+      }
+    ]
+  },
+  {
+    "id": 18,
+    "name": "Badge PVC avec cordon",
+    "unit": "badge",
+    "tiers": [
+      {
+        "min_qty": 50,
+        "unit_price": 160
+      },
+      {
+        "min_qty": 100,
+        "unit_price": 130
+      },
+      {
+        "min_qty": 500,
+        "unit_price": 100
+      }
+    ]
+  },
+  {
+    "id": 19,
+    "name": "Plaque PVC 30x40cm",
+    "unit": "plaque",
+    "tiers": [
+      {
+        "min_qty": 1,
+        "unit_price": 2800
+      },
+      {
+        "min_qty": 5,
+        "unit_price": 2300
+      },
+      {
+        "min_qty": 10,
+        "unit_price": 1950
+      }
+    ]
+  }
+]

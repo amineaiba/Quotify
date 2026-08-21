@@ -1,0 +1,130 @@
+[
+  {
+    "text": "salam khouya, je veux 500 flyers A5 couleur recto verso, papier bon quality, c'est combien?",
+    "gold": 1,
+    "missing": []
+  },
+  {
+    "text": "bonjour, chhal 1000 carte de visite?",
+    "gold": 3,
+    "missing": [
+      "finition"
+    ]
+  },
+  {
+    "text": "svp le prix des flyers",
+    "gold": 0,
+    "missing": [
+      "quantite",
+      "format",
+      "recto ou recto-verso"
+    ]
+  },
+  {
+    "text": "3andkom banderole? 3la 3rs, taille 1m sur 3m",
+    "gold": 7,
+    "missing": [
+      "quantite",
+      "delai"
+    ]
+  },
+  {
+    "text": "slm, bghit 200 autocollant rond pour les produits ta3i",
+    "gold": 9,
+    "missing": [
+      "taille"
+    ]
+  },
+  {
+    "text": "combien pour 50 tshirt avec logo devant",
+    "gold": 10,
+    "missing": [
+      "taille",
+      "couleur"
+    ]
+  },
+  {
+    "text": "wach t3amlou des mugs avec photo? nheb 30",
+    "gold": 11,
+    "missing": []
+  },
+  {
+    "text": "je cherche affiche grand format A2, 20 pieces",
+    "gold": 6,
+    "missing": [
+      "delai"
+    ]
+  },
+  {
+    "text": "sbah lkhir, roll up pour un stand, chhal wa7ed?",
+    "gold": 8,
+    "missing": [
+      "quantite"
+    ]
+  },
+  {
+    "text": "prix depliant 3 volets 500ex svp",
+    "gold": 12,
+    "missing": []
+  },
+  {
+    "text": "aandkom catalogue 16 page? environ 100 exemplaire",
+    "gold": 13,
+    "missing": [
+      "format"
+    ]
+  },
+  {
+    "text": "bonsoir je veux des enveloppes avec le logo de la societe, 1000",
+    "gold": 15,
+    "missing": [
+      "format"
+    ]
+  },
+  {
+    "text": "chhal tampon? o chhal ywali 3andkom",
+    "gold": 17,
+    "missing": [
+      "quantite",
+      "texte du tampon"
+    ]
+  },
+  {
+    "text": "salam, 100 badge avec cordon pour un evenement la semaine prochaine",
+    "gold": 18,
+    "missing": []
+  },
+  {
+    "text": "bghit plaque pvc pour la porte du bureau 30x40",
+    "gold": 19,
+    "missing": [
+      "quantite",
+      "texte"
+    ]
+  },
+  {
+    "text": "papier en tete 500 feuille avec logo, c bon?",
+    "gold": 16,
+    "missing": []
+  },
+  {
+    "text": "khouya 1000 flyer A6 recto seulement, urgent nhtajhom ghedwa",
+    "gold": 2,
+    "missing": []
+  },
+  {
+    "text": "vous faites des cachets en bois traditionnel?",
+    "gold": null,
+    "missing": []
+  },
+  {
+    "text": "slm, nheb impression sur bache pour vehicule, covering complet",
+    "gold": null,
+    "missing": []
+  },
+  {
+    "text": "3andkom livraison l wahran?",
+    "gold": null,
+    "missing": []
+  }
+]
