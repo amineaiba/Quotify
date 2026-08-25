@@ -19,6 +19,9 @@ This is a professional portfolio project. Best practice first, every time —
 including not adding a layer nothing needs yet. A repository class over one
 query is noise, not professionalism. Build the right thing, at the right size.
 
+Comments and docstrings: light, one line, only when the code doesn't already
+say it. Match `services/catalog.py` — not a tutorial in the source file.
+
 ## Decisions already made
 
 - **Stack**: FastAPI + PostgreSQL + pgvector, in Docker.
@@ -56,4 +59,10 @@ Skeleton done, first task verified. Catalog is in Postgres via pgvector,
 served at `POST /api/v1/catalog/search`. `evals/recall_at_k.py` against the
 live endpoint: `recall@1 = 0.94` (16/17), `recall@3 = 1.00` (17/17).
 
-Next: `calc_price`, Pydantic-validated pricing output.
+`calc_price` is done — `app/services/pricing.py`, `app/schemas/pricing.py`.
+Tier lookup, Pydantic-validated `PriceBreakdown` output, no endpoint (the
+agent will call it directly, like `search_catalog`). Below-minimum quantity
+raises `BelowMinimumQuantity` instead of inventing a price.
+
+Next: `app/agent/` — the hand-written `while` loop, calling `search_catalog`
+and `calc_price` as Gemini function-call tools.

@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from app.db.session import async_session_factory
 from app.llm.embeddings import embed
-from app.models.catalog import CatalogItem
+from app.models.catalog import CatalogItem, CatalogItemTier
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ async def seed() -> None:
                 id=item["id"],
                 name=item["name"],
                 unit=item["unit"],
-                tiers=item["tiers"],
+                tiers=[CatalogItemTier(**t) for t in item["tiers"]],
                 embedding=vector,
             )
             for item, vector in zip(to_insert, vectors, strict=True)
