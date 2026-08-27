@@ -6,3 +6,7 @@ class ItemNotFound(Exception):
 class BelowMinimumQuantity(Exception):
     def __init__(self, min_qty: int):
         self.min_qty = min_qty
+
+
+class AgentTurnLimitExceeded(Exception):
+    pass

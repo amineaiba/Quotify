@@ -5,7 +5,7 @@ from app.llm.embeddings import embed
 from app.models.catalog import CatalogItem
 
 
-async def search_catalog(session: AsyncSession, message: str, k: int) -> list[CatalogItem]:
+async def search_catalog(session: AsyncSession, message: str, k: int = 3) -> list[CatalogItem]:
     """Top k catalog items closest in meaning to `message`, best match first."""
     [query_vector] = embed([message], "RETRIEVAL_QUERY")
 

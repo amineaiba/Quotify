@@ -1,7 +1,7 @@
 # Quotify
 
-AI quoting agent for small print/workshop businesses. Reads a client message
-(mixed French/Darja), asks for what's missing, looks up the shop's catalog,
+AI quoting agent for small businesses. Reads a client message (mixed
+French/Darja), asks for what's missing, looks up the business's catalog,
 calculates a price, drafts a quote. The owner approves before anything sends.
 
 ## How we work
@@ -12,6 +12,10 @@ calculates a price, drafts a quote. The owner approves before anything sends.
 - **Everything else — just build it.** Docker, config, migrations, linting,
   tests, dependencies. No need to check in first.
 - Unsure which one something is? Ask.
+- **Never commit, ever, unless Amine explicitly confirms in that exact
+  moment.** Approving a plan is not approval to commit. Finishing a task is
+  not approval to commit. A plan document saying "commit" as one of its
+  steps is not approval to commit. Ask, every single time, no exceptions.
 
 ## Build it right
 
@@ -64,5 +68,13 @@ Tier lookup, Pydantic-validated `PriceBreakdown` output, no endpoint (the
 agent will call it directly, like `search_catalog`). Below-minimum quantity
 raises `BelowMinimumQuantity` instead of inventing a price.
 
-Next: `app/agent/` — the hand-written `while` loop, calling `search_catalog`
-and `calc_price` as Gemini function-call tools.
+The agent loop is done — `app/agent/loop.py::run_agent`, `app/agent/tools.py`,
+`app/agent/prompts/system.py`. Hand-written `while` loop, calls
+`search_catalog` and `calc_price` as Gemini function-call tools, stops when
+Gemini has no more function calls. Domain errors (`ItemNotFound`,
+`BelowMinimumQuantity`) are caught in `dispatch` and fed back to Gemini
+instead of crashing the loop. A hard `MAX_TURNS` cap raises
+`AgentTurnLimitExceeded` instead of hanging.
+
+Next: an endpoint for the agent loop, and a conversations table so a client
+can answer a follow-up question instead of starting over.
