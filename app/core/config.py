@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     database_url: str
     gemini_api_key: str
     embed_model: str = "gemini-embedding-001"
+    agent_model: str = "gemini-3.6-flash"
 
 
 @lru_cache

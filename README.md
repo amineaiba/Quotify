@@ -32,4 +32,6 @@ Check retrieval quality: `docker compose exec api python evals/recall_at_k.py`
 
 Catalog search is live: `POST /api/v1/catalog/search`. Tier pricing is live:
 `app/services/pricing.py::calc_price` (no endpoint — the agent will call it
-directly, same as `search_catalog`). Next: the agent loop itself.
+directly, same as `search_catalog`). The agent loop is live:
+`app/agent/loop.py::run_agent` — calls both tools via Gemini function
+calling, no endpoint yet.

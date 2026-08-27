@@ -31,3 +31,6 @@ Thumbs.db
 *.pid
 
 # --- Alembic (nothing to ignore today, migrations are committed) ---
+
+# --- personal learning notes, not part of the project ---
+learning/
