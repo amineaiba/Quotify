@@ -1,12 +1,13 @@
 services:
   db:
     image: pgvector/pgvector:pg17
+    env_file: .env.docker
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-quotify}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-quotify}
       POSTGRES_DB: ${POSTGRES_DB:-quotify}
     ports:
-      - "5432:5432"   # host access for a DB GUI only — the app talks to `db:5432`
+      - "5433:5432"   # 5433 to avoid clashing with a local Postgres on 5432; the api container still talks to `db:5432`
     volumes:
       - quotify_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -19,7 +20,7 @@ services:
     build:
       context: .
       target: dev
-    env_file: .env
+    env_file: .env.docker
     ports:
       - "8000:8000"
     volumes:

@@ -2,15 +2,16 @@
 
 AI quoting agent for small businesses. Reads a client message (mixed
 French/Darja), asks for what's missing, looks up the business's catalog,
-calculates a price, drafts a quote. The owner approves before anything sends.
+calculates a price, drafts a quote. Replies send automatically — needs
+automated guardrails.
 
 ## How we work
 
-- **Agent loop, tools, retrieval, prompts — build together.** Explain the
-  approach, build it in small pieces, let Amine make the calls. Pair
-  programming, not autocomplete.
-- **Everything else — just build it.** Docker, config, migrations, linting,
-  tests, dependencies. No need to check in first.
+- **Feature work — build together.** Agent loop, retrieval, prompts, CRUD,
+  auth, webhooks, frontend — all of it. Explain the approach, build it in
+  small pieces, let Amine make the calls. Pair programming, not autocomplete.
+- **Routine chores — just build it.** Docker, config, migrations, linting,
+  dependencies, boilerplate test setup. No need to check in first.
 - Unsure which one something is? Ask.
 - **Never commit, ever, unless Amine explicitly confirms in that exact
   moment.** Approving a plan is not approval to commit. Finishing a task is
@@ -26,55 +27,41 @@ query is noise, not professionalism. Build the right thing, at the right size.
 Comments and docstrings: light, one line, only when the code doesn't already
 say it. Match `services/catalog.py` — not a tutorial in the source file.
 
+## Local dev
+
+Only the `db` service runs in Docker (`pgvector/pgvector:pg17`, host port
+`5433`). The API runs locally with `uv run uvicorn`, not in Docker — faster
+reload, no image rebuild per change.
+
+```
+docker compose up -d db
+uv run uvicorn app.main:app --reload
+```
+
+Two env files: `.env` (local — app reads this by default) and `.env.docker`
+(used only by `docker-compose.yml`, for a full `docker compose up` when
+someone needs the whole stack containerized, e.g. prod-like testing).
+
 ## Decisions already made
 
-- **Stack**: FastAPI + PostgreSQL + pgvector, in Docker.
-- **API**: Gemini (`google-genai`), free tier — not the Claude API. Function
-  calling uses Gemini's shape, not Claude's `tool_use`.
-- **Agent loop**: hand-written `while` loop first. A LangGraph rebuild comes
-  later as an explicit comparison, not a replacement.
-- **Data**: portfolio project — fake catalog, fake client messages only.
-  Never put a real client's data through the Gemini key (free tier: Google
-  can use it).
+Never put a real client's data through the Gemini key — free tier, Google
+can use it. Portfolio project: fake catalog, fake client messages only.
 
-These aren't open questions — check with Amine before proposing a different
-stack or approach.
+Everything else — stack, why the agent loop is hand-written before
+LangGraph, why any other irreversible call was made — lives in
+`docs/ARCHITECTURE.md` and `docs/adr/`. These aren't open questions; check
+with Amine before proposing a different stack or approach.
 
 ## Repo layout
 
-Layer folders under `app/`: `models/`, `schemas/`, `services/`, `routers/`.
-One file per feature, same name in every layer — `models/catalog.py`,
-`schemas/catalog.py`, `services/catalog.py`, `routers/catalog.py`. Imports
-flow one way: `routers` → `services` → `models`. A service never imports a
-router.
+See `docs/ARCHITECTURE.md` for the current layer structure and where each
+kind of code lives.
 
-`app/llm/` is a package, not a layer — it's the only place a Gemini client
-gets created. `app/agent/` will be the same when it arrives: `loop.py`,
-`tools.py`, `prompts/` — not spread across the layer folders, because a
-prompt is not a layer.
+## Where things are
 
-`evals/` sits next to `tests/`, not inside it. A test passes or fails. An
-eval returns a score (`recall@k`). Evals cost real API calls, so they run by
-hand, not in CI.
-
-## Right now
-
-Skeleton done, first task verified. Catalog is in Postgres via pgvector,
-served at `POST /api/v1/catalog/search`. `evals/recall_at_k.py` against the
-live endpoint: `recall@1 = 0.94` (16/17), `recall@3 = 1.00` (17/17).
-
-`calc_price` is done — `app/services/pricing.py`, `app/schemas/pricing.py`.
-Tier lookup, Pydantic-validated `PriceBreakdown` output, no endpoint (the
-agent will call it directly, like `search_catalog`). Below-minimum quantity
-raises `BelowMinimumQuantity` instead of inventing a price.
-
-The agent loop is done — `app/agent/loop.py::run_agent`, `app/agent/tools.py`,
-`app/agent/prompts/system.py`. Hand-written `while` loop, calls
-`search_catalog` and `calc_price` as Gemini function-call tools, stops when
-Gemini has no more function calls. Domain errors (`ItemNotFound`,
-`BelowMinimumQuantity`) are caught in `dispatch` and fed back to Gemini
-instead of crashing the loop. A hard `MAX_TURNS` cap raises
-`AgentTurnLimitExceeded` instead of hanging.
-
-Next: an endpoint for the agent loop, and a conversations table so a client
-can answer a follow-up question instead of starting over.
+- `docs/ROADMAP.md` — what's built, what's next, both tracks (AI + software)
+- `docs/ARCHITECTURE.md` — current stack, repo layout, data model, request
+  flow
+- `docs/adr/` — why a hard-to-reverse decision was made, one file each
+- `docs/specs/` and `docs/plans/` — the design docs and implementation
+  plans that came out of each brainstorming session

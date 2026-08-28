@@ -34,3 +34,7 @@ Thumbs.db
 
 # --- personal learning notes, not part of the project ---
 learning/
+
+# --- raw AI-agent skill output (specs/plans) — kept local, not portfolio docs ---
+docs/specs/
+docs/plans/
