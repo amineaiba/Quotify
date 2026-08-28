@@ -16,5 +16,5 @@ async def messages(
 ) -> AgentReply:
     try:
         return await run_agent(session, body.message)
-    except AgentTurnLimitExceeded:
-        raise HTTPException(status_code=503, detail="agent did not finish")
+    except AgentTurnLimitExceeded as err:
+        raise HTTPException(status_code=503, detail="agent did not finish") from err
