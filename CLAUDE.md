@@ -64,4 +64,6 @@ kind of code lives.
   flow
 - `docs/adr/` — why a hard-to-reverse decision was made, one file each
 - `docs/specs/` and `docs/plans/` — the design docs and implementation
-  plans that came out of each brainstorming session
+  plans that came out of each brainstorming session. This overrides the
+  `docs/superpowers/specs/` and `docs/superpowers/plans/` defaults some
+  skills use — always write here instead.

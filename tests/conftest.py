@@ -10,6 +10,7 @@ from app.db.base import Base
 from app.db.session import get_session
 from app.llm.embeddings import EMBED_DIM
 from app.main import app
+from app.models.business import Business, Client
 from app.models.catalog import CatalogItem, CatalogItemTier
 
 # Kept as URL objects, not str(url) — that masks the password with "***".
