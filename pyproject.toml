@@ -16,6 +16,7 @@ dependencies = [
     "google-genai>=0.3",
     "python-dotenv>=1.0",
     "numpy>=2.1",
+    "fastapi-users[sqlalchemy]>=15.0.5",
 ]
 
 [dependency-groups]

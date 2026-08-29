@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     gemini_api_key: str
     embed_model: str = "gemini-embedding-001"
     agent_model: str = "gemini-3.6-flash"
+    jwt_secret: str
 
 
 @lru_cache
