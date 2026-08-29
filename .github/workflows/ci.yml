@@ -28,6 +28,7 @@ jobs:
       # Not a real key. Nothing in the test suite calls Gemini — evals do,
       # and evals don't run here (see evals/recall_at_k.py, CLAUDE.md).
       GEMINI_API_KEY: ci-placeholder
+      JWT_SECRET: ci-placeholder
 
     steps:
       - uses: actions/checkout@v4
