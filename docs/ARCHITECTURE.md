@@ -79,8 +79,8 @@ fed back to Gemini as text instead of crashing the loop.
 
 ## Decisions already made
 
-- **Agent loop**: hand-written `while` loop first. A LangGraph rebuild
-  comes later as an explicit comparison, not a replacement — see
+- **Agent loop**: hand-written `while` loop first (done, frozen). A
+  LangGraph rebuild replaces it as the active implementation — see
   `docs/adr/0001-hand-written-loop-before-langgraph.md`.
 - **Data**: portfolio project — fake catalog, fake client messages only.
   Never put a real client's data through the Gemini key (free tier: Google

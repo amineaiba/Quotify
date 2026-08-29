@@ -1,7 +1,7 @@
 # Roadmap
 
-Two tracks, worked separately by time of day (AI in the morning, software
-later) but both built together with Amine — see `CLAUDE.md`. Each phase
+Two tracks, worked separately but both built together with Amine — see
+`CLAUDE.md`. Each phase
 gets its own brainstorming session before it's built; see
 `docs/specs/` for the design docs that come out of that.
 
@@ -10,8 +10,9 @@ gets its own brainstorming session before it's built; see
 - [x] Catalog search via pgvector (`search_catalog`)
 - [x] Pricing (`calc_price`, tiers, `BelowMinimumQuantity`)
 - [x] Hand-written agent loop (`run_agent`) + endpoint
-- [ ] LangGraph rebuild of the agent loop — explicit comparison to the
-      hand-written version, not a replacement of it
+- [ ] LangGraph rebuild of the agent loop — replaces the hand-written
+      version as the active implementation (that version stays in the repo,
+      frozen, not extended further)
 - [ ] Multi-turn conversation state for the agent (depends on the software
       track's conversations table)
 
@@ -30,7 +31,9 @@ Ordered by dependency — each phase only needs what came before it.
 5. [ ] **Frontend dashboard** — conversations view, catalog management UI,
    quote history
 6. [ ] **Hardening** — background jobs/retries for webhook delivery and
-   failed sends, logging, error tracking, basic metrics
+   failed sends, logging, error tracking, basic metrics, email
+   verification + password reset (needs real email infra — skipped while
+   signups are fake data only)
 
 Update this file's checkboxes as phases ship. Add new phases as they come
 up; don't pre-plan past what's reasonably foreseeable.
