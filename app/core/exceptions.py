@@ -10,3 +10,7 @@ class BelowMinimumQuantity(Exception):
 
 class AgentTurnLimitExceeded(Exception):
     pass
+
+
+class InvalidRefreshToken(Exception):
+    pass
