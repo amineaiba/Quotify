@@ -12,6 +12,12 @@ from app.llm.embeddings import EMBED_DIM
 from app.main import app
 from app.models.business import Business, Client  # noqa: F401 — registers tables for create_all
 from app.models.catalog import CatalogItem, CatalogItemTier
+from app.models.conversation import (  # noqa: F401 — registers tables for create_all
+    Channel,
+    Conversation,
+    Message,
+    Sender,
+)
 from app.models.refresh_token import RefreshToken  # noqa: F401 — registers table for create_all
 
 # Kept as URL objects, not str(url) — that masks the password with "***".
