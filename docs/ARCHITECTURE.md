@@ -23,6 +23,8 @@ flow one way: `routers` → `services` → `models`.
 
 `app/llm/` is a package, not a layer — the only place a Gemini client gets
 created. `app/agent/` is the same: `loop.py`, `tools.py`, `prompts/`.
+`app/auth/` too: `users.py` (fastapi-users manager, JWT backend),
+`refresh.py` (refresh token create/rotate/revoke).
 
 `evals/` sits next to `tests/`, not inside it — evals score retrieval
 quality (`recall@k`) and cost real API calls, so they run by hand.
@@ -31,7 +33,53 @@ quality (`recall@k`) and cost real API calls, so they run by hand.
 
 ```mermaid
 erDiagram
+    BUSINESS ||--o{ CLIENT : has
+    BUSINESS ||--o{ REFRESH_TOKEN : has
+    BUSINESS ||--o{ CONVERSATION : has
+    CLIENT ||--o{ CONVERSATION : has
+    CONVERSATION ||--o{ MESSAGE : has
     CATALOG_ITEM ||--o{ CATALOG_ITEM_TIER : has
+
+    BUSINESS {
+        int id PK
+        string name
+        string email
+        string hashed_password
+        string api_key
+        bool is_active
+        bool is_superuser
+        bool is_verified
+        datetime created_at
+    }
+    CLIENT {
+        int id PK
+        int business_id FK
+        string phone_number
+        string name
+        datetime created_at
+    }
+    REFRESH_TOKEN {
+        int id PK
+        int business_id FK
+        string token_hash
+        datetime expires_at
+        datetime revoked_at
+        datetime created_at
+    }
+    CONVERSATION {
+        int id PK
+        int business_id FK
+        int client_id FK
+        string channel
+        datetime created_at
+    }
+    MESSAGE {
+        int id PK
+        int conversation_id FK
+        string sender
+        string content
+        datetime created_at
+    }
     CATALOG_ITEM {
         int id PK
         string name
@@ -46,7 +94,9 @@ erDiagram
     }
 ```
 
-No conversation/tenant tables yet — see `ROADMAP.md`, software phase 1.
+`CatalogItem` isn't scoped to a `Business` yet — deferred to the Catalog
+management phase, see `ROADMAP.md`. Full target model (including `Quote`,
+not built yet) is in `docs/specs/2026-08-28-data-model-design.md`.
 
 ## Request flow (current)
 
