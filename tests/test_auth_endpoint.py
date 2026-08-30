@@ -37,6 +37,63 @@ async def test_login_returns_jwt_token(client, session):
     body = response.json()
     assert body["token_type"] == "bearer"
     assert body["access_token"]
+    assert body["refresh_token"]
+
+
+async def test_refresh_rotates_tokens(client, session):
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "refresh@atelier.dz", "password": "s3cret-pw", "name": "A"},
+    )
+    login = await client.post(
+        "/api/v1/auth/jwt/login",
+        data={"username": "refresh@atelier.dz", "password": "s3cret-pw"},
+    )
+    old_refresh_token = login.json()["refresh_token"]
+
+    response = await client.post(
+        "/api/v1/auth/jwt/refresh", json={"refresh_token": old_refresh_token}
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["access_token"]
+    assert body["refresh_token"] != old_refresh_token
+
+    reuse = await client.post(
+        "/api/v1/auth/jwt/refresh", json={"refresh_token": old_refresh_token}
+    )
+    assert reuse.status_code == 401  # rotation: old token is now revoked
+
+
+async def test_refresh_rejects_unknown_token(client, session):
+    response = await client.post(
+        "/api/v1/auth/jwt/refresh", json={"refresh_token": "not-a-real-token"}
+    )
+
+    assert response.status_code == 401
+
+
+async def test_logout_revokes_refresh_token(client, session):
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": "logout@atelier.dz", "password": "s3cret-pw", "name": "A"},
+    )
+    login = await client.post(
+        "/api/v1/auth/jwt/login",
+        data={"username": "logout@atelier.dz", "password": "s3cret-pw"},
+    )
+    refresh_token = login.json()["refresh_token"]
+
+    logout_response = await client.post(
+        "/api/v1/auth/jwt/logout", json={"refresh_token": refresh_token}
+    )
+    assert logout_response.status_code == 204
+
+    reuse = await client.post(
+        "/api/v1/auth/jwt/refresh", json={"refresh_token": refresh_token}
+    )
+    assert reuse.status_code == 401
 
 
 async def test_users_me_requires_auth(client, session):
