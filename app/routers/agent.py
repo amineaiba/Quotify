@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.loop import run_agent
+from app.agent.graph import run_agent
 from app.core.exceptions import AgentTurnLimitExceeded
 from app.db.session import get_session
 from app.schemas.agent import AgentReply, AgentRequest

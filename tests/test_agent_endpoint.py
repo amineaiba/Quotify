@@ -1,19 +1,21 @@
-from app.agent.loop import MAX_TURNS
-from tests.conftest import FLYER_ID, FakeCall, FakeClient, FakeResponse, seed_flyer
+from app.agent.graph import MAX_TURNS
+from tests.conftest import (
+    FLYER_ID,
+    GraphFakeClient,
+    graph_text_content,
+    graph_tool_call_content,
+    seed_flyer,
+)
 
 
 async def test_messages_prices_item_and_returns_quote_ready(client, session, monkeypatch):
     await seed_flyer(session)
     responses = [
-        FakeResponse(
-            function_calls=[
-                FakeCall(name="calc_price", args={"item_id": str(FLYER_ID), "quantity": 500})
-            ]
-        ),
-        FakeResponse(function_calls=[], text="500 flyers A5 recto-verso : 9500 DA."),
+        graph_tool_call_content("calc_price", {"item_id": str(FLYER_ID), "quantity": 500}),
+        graph_text_content("500 flyers A5 recto-verso : 9500 DA."),
     ]
-    client_double = FakeClient(responses)
-    monkeypatch.setattr("app.agent.loop.get_client", lambda: client_double)
+    client_double = GraphFakeClient(responses)
+    monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 
     response = await client.post(
         "/api/v1/agent/messages", json={"message": "500 flyers A5 recto verso, chhal?"}
@@ -26,9 +28,9 @@ async def test_messages_prices_item_and_returns_quote_ready(client, session, mon
 
 
 async def test_messages_no_tool_calls_returns_needs_info(client, session, monkeypatch):
-    responses = [FakeResponse(function_calls=[], text="Quelle quantité voulez-vous ?")]
-    client_double = FakeClient(responses)
-    monkeypatch.setattr("app.agent.loop.get_client", lambda: client_double)
+    responses = [graph_text_content("Quelle quantité voulez-vous ?")]
+    client_double = GraphFakeClient(responses)
+    monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 
     response = await client.post("/api/v1/agent/messages", json={"message": "svp le prix"})
 
@@ -46,14 +48,14 @@ async def test_messages_rejects_empty_message(client, session):
 
 async def test_messages_turn_limit_returns_503(client, session, monkeypatch):
     await seed_flyer(session)
-    always_calls = FakeResponse(
-        function_calls=[
-            FakeCall(name="calc_price", args={"item_id": str(FLYER_ID), "quantity": 500})
-        ]
+    always_calls = graph_tool_call_content(
+        "calc_price", {"item_id": str(FLYER_ID), "quantity": 500}
     )
-    responses = [always_calls] * MAX_TURNS
-    client_double = FakeClient(responses)
-    monkeypatch.setattr("app.agent.loop.get_client", lambda: client_double)
+    # +1: the graph needs one more call_model turn than MAX_TURNS to prove
+    # the cap actually stops it, same margin as tests/test_agent_graph.py.
+    responses = [always_calls] * (MAX_TURNS + 1)
+    client_double = GraphFakeClient(responses)
+    monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 
     response = await client.post("/api/v1/agent/messages", json={"message": "500 flyers"})
 
