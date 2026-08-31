@@ -1,5 +1,6 @@
 import hashlib
 import secrets
+import uuid
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
@@ -16,7 +17,7 @@ def _hash(raw_token: str) -> str:
     return hashlib.sha256(raw_token.encode()).hexdigest()
 
 
-async def create_refresh_token(session: AsyncSession, business_id: int) -> str:
+async def create_refresh_token(session: AsyncSession, business_id: uuid.UUID) -> str:
     raw_token = secrets.token_urlsafe(32)
     session.add(
         RefreshToken(

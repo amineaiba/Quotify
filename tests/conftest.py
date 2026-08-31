@@ -1,3 +1,4 @@
+import uuid
 from dataclasses import dataclass, field
 
 import pytest_asyncio
@@ -101,10 +102,13 @@ class FakeClient:
         self.models = FakeModels(responses)
 
 
+FLYER_ID = uuid.UUID("11111111-1111-1111-1111-111111111111")
+
+
 async def seed_flyer(session: AsyncSession) -> None:
     session.add(
         CatalogItem(
-            id=1,
+            id=FLYER_ID,
             name="Flyer A5 quadri recto-verso",
             unit="flyer",
             tiers=[

@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from app.agent.loop import MAX_TURNS, run_agent
 from app.core.exceptions import AgentTurnLimitExceeded
 from app.schemas.agent import AgentReply
-from tests.conftest import FakeCall, FakeClient, FakeResponse, seed_flyer
+from tests.conftest import FLYER_ID, FakeCall, FakeClient, FakeResponse, seed_flyer
 
 
 def test_agent_reply_defaults_to_empty_lines():
@@ -24,7 +24,9 @@ async def test_run_agent_prices_item_and_returns_quote_ready(session, monkeypatc
     await seed_flyer(session)
     responses = [
         FakeResponse(
-            function_calls=[FakeCall(name="calc_price", args={"item_id": 1, "quantity": 500})]
+            function_calls=[
+                FakeCall(name="calc_price", args={"item_id": str(FLYER_ID), "quantity": 500})
+            ]
         ),
         FakeResponse(function_calls=[], text="500 flyers A5 recto-verso : 9500 DA."),
     ]
@@ -54,7 +56,9 @@ async def test_run_agent_below_minimum_continues_without_crashing(session, monke
     await seed_flyer(session)
     responses = [
         FakeResponse(
-            function_calls=[FakeCall(name="calc_price", args={"item_id": 1, "quantity": 50})]
+            function_calls=[
+                FakeCall(name="calc_price", args={"item_id": str(FLYER_ID), "quantity": 50})
+            ]
         ),
         FakeResponse(function_calls=[], text="Le minimum pour cet article est 100."),
     ]
@@ -71,7 +75,9 @@ async def test_run_agent_below_minimum_continues_without_crashing(session, monke
 async def test_run_agent_raises_after_max_turns(session, monkeypatch):
     await seed_flyer(session)
     always_calls = FakeResponse(
-        function_calls=[FakeCall(name="calc_price", args={"item_id": 1, "quantity": 500})]
+        function_calls=[
+            FakeCall(name="calc_price", args={"item_id": str(FLYER_ID), "quantity": 500})
+        ]
     )
     responses = [always_calls] * MAX_TURNS
     client = FakeClient(responses)

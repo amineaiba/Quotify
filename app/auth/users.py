@@ -1,7 +1,8 @@
+import uuid
 from collections.abc import AsyncGenerator
 
 from fastapi import Depends
-from fastapi_users import BaseUserManager, FastAPIUsers, IntegerIDMixin
+from fastapi_users import BaseUserManager, FastAPIUsers, UUIDIDMixin
 from fastapi_users.authentication import AuthenticationBackend, BearerTransport, JWTStrategy
 from fastapi_users_db_sqlalchemy import SQLAlchemyUserDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +18,7 @@ async def get_user_db(
     yield SQLAlchemyUserDatabase(session, Business)
 
 
-class BusinessManager(IntegerIDMixin, BaseUserManager[Business, int]):
+class BusinessManager(UUIDIDMixin, BaseUserManager[Business, uuid.UUID]):
     reset_password_token_secret = get_settings().jwt_secret
     verification_token_secret = get_settings().jwt_secret
 
@@ -41,6 +42,6 @@ auth_backend = AuthenticationBackend(
     get_strategy=get_jwt_strategy,
 )
 
-fastapi_users = FastAPIUsers[Business, int](get_business_manager, [auth_backend])
+fastapi_users = FastAPIUsers[Business, uuid.UUID](get_business_manager, [auth_backend])
 
 current_active_business = fastapi_users.current_user(active=True)
