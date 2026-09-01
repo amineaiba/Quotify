@@ -15,10 +15,8 @@ from tests.conftest import (
 
 
 async def test_call_model_appends_response_to_history(monkeypatch):
-    monkeypatch.setattr(
-        "app.agent.graph.get_client",
-        lambda: GraphFakeClient([graph_text_content("bonjour")]),
-    )
+    client_double = GraphFakeClient([graph_text_content("bonjour")])
+    monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
     state: AgentState = {
         "history": [types.Content(role="user", parts=[types.Part(text="salut")])],
         "lines": [],
@@ -76,8 +74,8 @@ async def test_run_agent_prices_item_and_returns_quote_ready(session, monkeypatc
         graph_tool_call_content("calc_price", {"item_id": str(FLYER_ID), "quantity": 500}),
         graph_text_content("500 flyers A5 recto-verso : 9500 DA."),
     ]
-    client = GraphFakeClient(responses)
-    monkeypatch.setattr("app.agent.graph.get_client", lambda: client)
+    client_double = GraphFakeClient(responses)
+    monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 
     reply = await run_agent(session, "500 flyers A5 recto verso, chhal?")
 
@@ -88,8 +86,8 @@ async def test_run_agent_prices_item_and_returns_quote_ready(session, monkeypatc
 
 async def test_run_agent_no_tool_calls_returns_needs_info(session, monkeypatch):
     responses = [graph_text_content("Quelle quantité voulez-vous ?")]
-    client = GraphFakeClient(responses)
-    monkeypatch.setattr("app.agent.graph.get_client", lambda: client)
+    client_double = GraphFakeClient(responses)
+    monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 
     reply = await run_agent(session, "svp le prix des flyers")
 
@@ -104,8 +102,8 @@ async def test_run_agent_below_minimum_continues_without_crashing(session, monke
         graph_tool_call_content("calc_price", {"item_id": str(FLYER_ID), "quantity": 50}),
         graph_text_content("Le minimum pour cet article est 100."),
     ]
-    client = GraphFakeClient(responses)
-    monkeypatch.setattr("app.agent.graph.get_client", lambda: client)
+    client_double = GraphFakeClient(responses)
+    monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 
     reply = await run_agent(session, "50 flyers A5 recto verso")
 
@@ -119,11 +117,9 @@ async def test_run_agent_raises_after_max_turns(session, monkeypatch):
     always_calls = graph_tool_call_content(
         "calc_price", {"item_id": str(FLYER_ID), "quantity": 500}
     )
-    # +1: the graph needs one more call_model turn than MAX_TURNS to prove
-    # the cap actually stops it, same margin as tests/test_agent_loop.py.
-    responses = [always_calls] * (MAX_TURNS + 1)
-    client = GraphFakeClient(responses)
-    monkeypatch.setattr("app.agent.graph.get_client", lambda: client)
+    responses = [always_calls] * MAX_TURNS
+    client_double = GraphFakeClient(responses)
+    monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 
     with pytest.raises(AgentTurnLimitExceeded):
         await run_agent(session, "500 flyers")

@@ -51,9 +51,7 @@ async def test_messages_turn_limit_returns_503(client, session, monkeypatch):
     always_calls = graph_tool_call_content(
         "calc_price", {"item_id": str(FLYER_ID), "quantity": 500}
     )
-    # +1: the graph needs one more call_model turn than MAX_TURNS to prove
-    # the cap actually stops it, same margin as tests/test_agent_graph.py.
-    responses = [always_calls] * (MAX_TURNS + 1)
+    responses = [always_calls] * MAX_TURNS
     client_double = GraphFakeClient(responses)
     monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 

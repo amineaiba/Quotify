@@ -89,6 +89,7 @@ async def run_agent(session: AsyncSession, message: str) -> AgentReply:
     }
     config = {
         "configurable": {"session": session},
+        # each turn is 2 graph steps (call_model, run_tools), so double MAX_TURNS
         "recursion_limit": MAX_TURNS * 2,
     }
     try:
