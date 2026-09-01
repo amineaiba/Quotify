@@ -7,6 +7,7 @@ from app.core.exceptions import BelowMinimumQuantity, ItemNotFound
 from app.llm.embeddings import EMBED_DIM
 from app.models.catalog import CatalogItem, CatalogItemTier
 from app.services.pricing import calc_price, pick_tier
+from tests.conftest import make_business
 
 # Flyer A5 quadri recto-verso
 FLYER_TIERS = [
@@ -51,7 +52,9 @@ def test_pick_tier_below_minimum_raises():
 
 
 async def test_calc_price_happy_path(session):
+    business = await make_business(session)
     item = CatalogItem(
+        business_id=business.id,
         name="Flyer A5 quadri recto-verso",
         unit="flyer",
         tiers=[CatalogItemTier(min_qty=t.min_qty, unit_price=t.unit_price) for t in FLYER_TIERS],
