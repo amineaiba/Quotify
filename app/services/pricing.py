@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -14,7 +16,7 @@ def pick_tier(tiers: list[CatalogItemTier], quantity: int) -> CatalogItemTier:
     return max(eligible, key=lambda t: t.min_qty)
 
 
-async def calc_price(session: AsyncSession, item_id: int, quantity: int) -> PriceBreakdown:
+async def calc_price(session: AsyncSession, item_id: uuid.UUID, quantity: int) -> PriceBreakdown:
     """Look up item_id, pick the tier for quantity, compose the breakdown."""
     item = await session.get(
         CatalogItem, item_id, options=[selectinload(CatalogItem.tiers)]

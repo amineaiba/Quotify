@@ -1,4 +1,5 @@
 import random
+import uuid
 
 import pytest
 
@@ -7,7 +8,7 @@ from app.llm.embeddings import EMBED_DIM
 from app.models.catalog import CatalogItem, CatalogItemTier
 from app.services.pricing import calc_price, pick_tier
 
-# Flyer A5 quadri recto-verso (data/catalog.json id 1)
+# Flyer A5 quadri recto-verso
 FLYER_TIERS = [
     CatalogItemTier(min_qty=100, unit_price=30),
     CatalogItemTier(min_qty=500, unit_price=19),
@@ -50,20 +51,16 @@ def test_pick_tier_below_minimum_raises():
 
 
 async def test_calc_price_happy_path(session):
-    session.add(
-        CatalogItem(
-            id=1,
-            name="Flyer A5 quadri recto-verso",
-            unit="flyer",
-            tiers=[
-                CatalogItemTier(min_qty=t.min_qty, unit_price=t.unit_price) for t in FLYER_TIERS
-            ],
-            embedding=[0.0] * EMBED_DIM,
-        )
+    item = CatalogItem(
+        name="Flyer A5 quadri recto-verso",
+        unit="flyer",
+        tiers=[CatalogItemTier(min_qty=t.min_qty, unit_price=t.unit_price) for t in FLYER_TIERS],
+        embedding=[0.0] * EMBED_DIM,
     )
+    session.add(item)
     await session.commit()
 
-    breakdown = await calc_price(session, item_id=1, quantity=500)
+    breakdown = await calc_price(session, item_id=item.id, quantity=500)
 
     assert breakdown.name == "Flyer A5 quadri recto-verso"
     assert breakdown.unit == "flyer"
@@ -74,7 +71,9 @@ async def test_calc_price_happy_path(session):
 
 
 async def test_calc_price_unknown_item_raises(session):
-    with pytest.raises(ItemNotFound) as exc_info:
-        await calc_price(session, item_id=999, quantity=500)
+    unknown_id = uuid.uuid4()
 
-    assert exc_info.value.item_id == 999
+    with pytest.raises(ItemNotFound) as exc_info:
+        await calc_price(session, item_id=unknown_id, quantity=500)
+
+    assert exc_info.value.item_id == unknown_id

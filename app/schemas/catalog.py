@@ -1,3 +1,5 @@
+import uuid
+
 from pydantic import BaseModel, Field
 
 
@@ -7,7 +9,7 @@ class SearchRequest(BaseModel):
 
 
 class CatalogItemOut(BaseModel):
-    id: int
+    id: uuid.UUID
     name: str
     unit: str
 

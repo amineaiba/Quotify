@@ -1,3 +1,5 @@
+import uuid
+
 from google.genai import types
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -27,7 +29,7 @@ TOOLS = types.Tool(
             parameters_json_schema={
                 "type": "object",
                 "properties": {
-                    "item_id": {"type": "integer"},
+                    "item_id": {"type": "string", "format": "uuid"},
                     "quantity": {"type": "integer"},
                 },
                 "required": ["item_id", "quantity"],
@@ -42,10 +44,21 @@ async def dispatch(session: AsyncSession, name: str, args: dict) -> dict:
         if name == "search_catalog":
             items = await search_catalog(session, **args)
             return {
-                "items": [CatalogItemOut.model_validate(i).model_dump() for i in items]
+                "items": [
+                    CatalogItemOut.model_validate(i).model_dump(mode="json") for i in items
+                ]
             }
         if name == "calc_price":
-            return (await calc_price(session, **args)).model_dump()
+            # item_id arrives as a string — the LLM only speaks JSON.
+            try:
+                item_id = uuid.UUID(args["item_id"])
+            except ValueError:
+                return {"error": "ItemNotFound", "item_id": args["item_id"]}
+            return (await calc_price(session, item_id, args["quantity"])).model_dump(
+                mode="json"
+            )
         return {"error": "UnknownTool", "name": name}
-    except (ItemNotFound, BelowMinimumQuantity) as e:
-        return {"error": type(e).__name__, **vars(e)}
+    except ItemNotFound as e:
+        return {"error": "ItemNotFound", "item_id": str(e.item_id)}
+    except BelowMinimumQuantity as e:
+        return {"error": "BelowMinimumQuantity", "min_qty": e.min_qty}

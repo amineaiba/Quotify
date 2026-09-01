@@ -10,7 +10,7 @@ gets its own brainstorming session before it's built; see
 - [x] Catalog search via pgvector (`search_catalog`)
 - [x] Pricing (`calc_price`, tiers, `BelowMinimumQuantity`)
 - [x] Hand-written agent loop (`run_agent`) + endpoint
-- [ ] LangGraph rebuild of the agent loop — replaces the hand-written
+- [x] LangGraph rebuild of the agent loop — replaces the hand-written
       version as the active implementation (that version stays in the repo,
       frozen, not extended further)
 - [ ] Multi-turn conversation state for the agent (depends on the software

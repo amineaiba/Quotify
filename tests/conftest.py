@@ -1,6 +1,8 @@
+import uuid
 from dataclasses import dataclass, field
 
 import pytest_asyncio
+from google.genai import types
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -101,10 +103,56 @@ class FakeClient:
         self.models = FakeModels(responses)
 
 
+# --- test doubles for the LangGraph agent (app/agent/graph.py) ------------
+# call_model only reads response.candidates[0].content, and run_tools/
+# has_tool_calls read function calls out of content.parts (see
+# app.agent.graph._function_calls) — so these doubles build real
+# google.genai Content/Part objects, unlike FakeResponse above which
+# leaves content as None and exposes function_calls as a flat list
+# instead (matching the hand-written loop.py's reads).
+
+
+def graph_tool_call_content(name: str, args: dict) -> types.Content:
+    return types.Content(
+        role="model",
+        parts=[types.Part(function_call=types.FunctionCall(name=name, args=args))],
+    )
+
+
+def graph_text_content(text: str) -> types.Content:
+    return types.Content(role="model", parts=[types.Part(text=text)])
+
+
+class _GraphFakeCandidate:
+    def __init__(self, content: types.Content) -> None:
+        self.content = content
+
+
+class _GraphFakeResponse:
+    def __init__(self, content: types.Content) -> None:
+        self.candidates = [_GraphFakeCandidate(content)]
+
+
+class _GraphFakeModels:
+    def __init__(self, responses: list[types.Content]) -> None:
+        self._responses = iter(responses)
+
+    def generate_content(self, **kwargs):
+        return _GraphFakeResponse(next(self._responses))
+
+
+class GraphFakeClient:
+    def __init__(self, responses: list[types.Content]) -> None:
+        self.models = _GraphFakeModels(responses)
+
+
+FLYER_ID = uuid.UUID("11111111-1111-1111-1111-111111111111")
+
+
 async def seed_flyer(session: AsyncSession) -> None:
     session.add(
         CatalogItem(
-            id=1,
+            id=FLYER_ID,
             name="Flyer A5 quadri recto-verso",
             unit="flyer",
             tiers=[

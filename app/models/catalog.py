@@ -1,5 +1,8 @@
+import uuid
+
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import ForeignKey, UniqueConstraint
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -9,7 +12,9 @@ from app.llm.embeddings import EMBED_DIM
 class CatalogItem(Base):
     __tablename__ = "catalog_items"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
     name: Mapped[str] = mapped_column(nullable=False)
     unit: Mapped[str] = mapped_column(nullable=False)
 
@@ -25,9 +30,11 @@ class CatalogItemTier(Base):
     __tablename__ = "catalog_item_tiers"
     __table_args__ = (UniqueConstraint("catalog_item_id", "min_qty"),)
 
-    id: Mapped[int] = mapped_column(primary_key=True)
-    catalog_item_id: Mapped[int] = mapped_column(
-        ForeignKey("catalog_items.id", ondelete="CASCADE"), nullable=False
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    catalog_item_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("catalog_items.id", ondelete="CASCADE"), nullable=False
     )
     min_qty: Mapped[int] = mapped_column(nullable=False)
     unit_price: Mapped[int] = mapped_column(nullable=False)

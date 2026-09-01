@@ -8,6 +8,7 @@ phase ships — this file describes what's built, not what's planned (see
 
 FastAPI + PostgreSQL + pgvector. Gemini (`google-genai`, free tier) for
 embeddings and function calling. SQLAlchemy + Alembic for the DB layer.
+LangGraph for the agent loop.
 
 Locally, only `db` runs in Docker (`pgvector/pgvector:pg17`, host port
 `5433`); the API runs with `uv run uvicorn app.main:app --reload` for fast
@@ -22,7 +23,9 @@ One file per feature, same name in every layer — e.g. `models/catalog.py`,
 flow one way: `routers` → `services` → `models`.
 
 `app/llm/` is a package, not a layer — the only place a Gemini client gets
-created. `app/agent/` is the same: `loop.py`, `tools.py`, `prompts/`.
+created. `app/agent/` is the same: `graph.py` (active, LangGraph),
+`tools.py`, `prompts/`. `loop.py` is the frozen hand-written version — see
+`docs/adr/0001-hand-written-loop-before-langgraph.md`.
 `app/auth/` too: `users.py` (fastapi-users manager, JWT backend),
 `refresh.py` (refresh token create/rotate/revoke).
 
@@ -104,7 +107,7 @@ not built yet) is in `docs/specs/2026-08-28-data-model-design.md`.
 sequenceDiagram
     participant C as Client (curl/Postman)
     participant R as routers/agent.py
-    participant L as agent/loop.py (run_agent)
+    participant L as agent/graph.py (run_agent)
     participant G as Gemini
     participant T as agent/tools.py (dispatch)
     participant DB as Postgres

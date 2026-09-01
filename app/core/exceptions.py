@@ -1,5 +1,8 @@
+import uuid
+
+
 class ItemNotFound(Exception):
-    def __init__(self, item_id: int):
+    def __init__(self, item_id: uuid.UUID):
         self.item_id = item_id
 
 

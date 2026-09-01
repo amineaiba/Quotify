@@ -1,7 +1,9 @@
+import uuid
+
 from fastapi_users import schemas
 
 
-class BusinessRead(schemas.BaseUser[int]):
+class BusinessRead(schemas.BaseUser[uuid.UUID]):
     name: str
 
 
