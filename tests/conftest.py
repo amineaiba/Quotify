@@ -146,13 +146,41 @@ class GraphFakeClient:
         self.models = _GraphFakeModels(responses)
 
 
+async def make_business(session: AsyncSession, **overrides) -> Business:
+    defaults = {
+        "name": "Seed Business",
+        "email": f"seed-{uuid.uuid4()}@example.com",
+        "hashed_password": "hashed",
+        "api_key": f"key-{uuid.uuid4()}",
+    }
+    defaults.update(overrides)
+    business = Business(**defaults)
+    session.add(business)
+    await session.flush()
+    return business
+
+
+async def register_and_login(client: AsyncClient, email: str, name: str = "Test Co") -> str:
+    """Registers a business and returns a bearer access token for it."""
+    await client.post(
+        "/api/v1/auth/register",
+        json={"email": email, "password": "s3cret-pw", "name": name},
+    )
+    login = await client.post(
+        "/api/v1/auth/jwt/login", data={"username": email, "password": "s3cret-pw"}
+    )
+    return login.json()["access_token"]
+
+
 FLYER_ID = uuid.UUID("11111111-1111-1111-1111-111111111111")
 
 
 async def seed_flyer(session: AsyncSession) -> None:
+    business = await make_business(session)
     session.add(
         CatalogItem(
             id=FLYER_ID,
+            business_id=business.id,
             name="Flyer A5 quadri recto-verso",
             unit="flyer",
             tiers=[
