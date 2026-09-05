@@ -1559,6 +1559,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "fastapi-users", extra = ["sqlalchemy"] },
     { name = "google-genai" },
+    { name = "httpx" },
     { name = "langgraph" },
     { name = "numpy" },
     { name = "pgvector" },
@@ -1571,7 +1572,6 @@ dependencies = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "httpx" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -1585,6 +1585,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.115" },
     { name = "fastapi-users", extras = ["sqlalchemy"], specifier = ">=15.0.5" },
     { name = "google-genai", specifier = ">=0.3" },
+    { name = "httpx", specifier = ">=0.27" },
     { name = "langgraph", specifier = ">=1.2" },
     { name = "numpy", specifier = ">=2.1" },
     { name = "pgvector", specifier = ">=0.3.6" },
@@ -1597,7 +1598,6 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "httpx", specifier = ">=0.27" },
     { name = "pre-commit", specifier = ">=4.0" },
     { name = "pytest", specifier = ">=8.3" },
     { name = "pytest-asyncio", specifier = ">=0.24" },

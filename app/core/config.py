@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     embed_model: str = "gemini-embedding-001"
     agent_model: str = "gemini-3.6-flash"
     jwt_secret: str
+    meta_app_secret: str
+    meta_verify_token: str
+    whatsapp_access_token: str
+    log_level: str = "INFO"
 
 
 @lru_cache

@@ -24,7 +24,7 @@ Ordered by dependency — each phase only needs what came before it.
    login/refresh/logout), conversations + messages tables. Webhook
    `api_key` column exists on `Business`; the verification dependency
    itself lands in Channel integration, where it's first used.
-2. [ ] **Catalog management** — CRUD endpoints for items/tiers, replacing
+2. [x] **Catalog management** — CRUD endpoints for items/tiers, replacing
    `scripts/seed_catalog.py`; wires in embed-on-write
 3. [ ] **Channel integration** — Meta/WhatsApp webhook: verify signature →
    save inbound message → call agent → send reply back

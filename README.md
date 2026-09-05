@@ -20,7 +20,6 @@ Python, FastAPI, PostgreSQL + pgvector, SQLAlchemy + Alembic, Docker, Gemini
 cp .env.example .env        # fill in GEMINI_API_KEY
 docker compose up -d --build
 docker compose exec api alembic upgrade head
-docker compose exec api python scripts/seed_catalog.py
 docker compose exec api pytest
 ```
 
