@@ -2,7 +2,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, func
+from sqlalchemy import DateTime, Enum, ForeignKey, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -21,10 +21,9 @@ class Sender(enum.StrEnum):
 
 class Conversation(Base):
     __tablename__ = "conversations"
+    __table_args__ = (UniqueConstraint("business_id", "client_id", "channel"),)
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
     )
@@ -49,9 +48,7 @@ class Conversation(Base):
 class Message(Base):
     __tablename__ = "messages"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     conversation_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False
     )
@@ -60,6 +57,7 @@ class Message(Base):
         nullable=False,
     )
     content: Mapped[str] = mapped_column(nullable=False)
+    whatsapp_message_id: Mapped[str | None] = mapped_column(unique=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

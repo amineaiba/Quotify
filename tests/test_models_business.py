@@ -52,3 +52,36 @@ async def test_client_phone_can_repeat_across_businesses(session):
     session.add(Client(business_id=business_a.id, phone_number="+213555000000"))
     session.add(Client(business_id=business_b.id, phone_number="+213555000000"))
     await session.commit()  # must not raise
+
+
+async def test_whatsapp_phone_number_id_must_be_unique(session):
+    session.add(
+        Business(
+            name="A",
+            email="wa1@x.com",
+            hashed_password="h",
+            api_key="k4",
+            whatsapp_phone_number_id="123456",
+        )
+    )
+    await session.commit()
+
+    session.add(
+        Business(
+            name="B",
+            email="wa2@x.com",
+            hashed_password="h",
+            api_key="k5",
+            whatsapp_phone_number_id="123456",
+        )
+    )
+    with pytest.raises(IntegrityError):
+        await session.commit()
+
+
+async def test_whatsapp_phone_number_id_defaults_to_null(session):
+    business = Business(name="A", email="wa3@x.com", hashed_password="h", api_key="k6")
+    session.add(business)
+    await session.commit()
+
+    assert business.whatsapp_phone_number_id is None

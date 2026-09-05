@@ -17,6 +17,7 @@ class Business(SQLAlchemyBaseUserTableUUID, Base):
     api_key: Mapped[str] = mapped_column(
         unique=True, nullable=False, default=lambda: secrets.token_urlsafe(32)
     )
+    whatsapp_phone_number_id: Mapped[str | None] = mapped_column(unique=True, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -30,9 +31,7 @@ class Client(Base):
     __tablename__ = "clients"
     __table_args__ = (UniqueConstraint("business_id", "phone_number"),)
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
-    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     business_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
     )
