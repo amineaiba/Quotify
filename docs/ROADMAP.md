@@ -26,12 +26,17 @@ Ordered by dependency — each phase only needs what came before it.
    itself lands in Channel integration, where it's first used.
 2. [x] **Catalog management** — CRUD endpoints for items/tiers, replacing
    `scripts/seed_catalog.py`; wires in embed-on-write
-3. [ ] **Channel integration** — Meta/WhatsApp webhook: verify signature →
-   save inbound message → call agent → send reply back
+3. [x] **Channel integration** — Meta/WhatsApp webhook: verify signature →
+   save inbound message → call agent → send reply back. `Business.
+   whatsapp_phone_number_id` is wired by hand (SQL) for now — no self-serve
+   way for a business to connect their own WhatsApp number yet, see phase 5.
 4. [ ] **Guardrails** — confidence checks, hold-for-review queue, rate
    limits in front of auto-send
 5. [ ] **Frontend dashboard** — conversations view, catalog management UI,
-   quote history
+   quote history, **"Connect WhatsApp" via Meta's Embedded Signup** (business
+   owner logs into their own Facebook Business account, picks their number,
+   Meta hands us `phone_number_id` + token automatically — replaces today's
+   manual DB update)
 6. [ ] **Hardening** — background jobs/retries for webhook delivery and
    failed sends, logging, error tracking, basic metrics, email
    verification + password reset (needs real email infra — skipped while
