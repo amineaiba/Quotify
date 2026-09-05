@@ -86,3 +86,60 @@ async def test_sender_rejects_invalid_value_at_db_level(session):
             {"conversation_id": conversation.id},
         )
         await session.commit()
+
+
+async def test_only_one_conversation_per_client_and_channel(session):
+    client = await _make_client(session)
+    session.add(
+        Conversation(business_id=client.business_id, client_id=client.id, channel=Channel.whatsapp)
+    )
+    await session.commit()
+
+    session.add(
+        Conversation(business_id=client.business_id, client_id=client.id, channel=Channel.whatsapp)
+    )
+    with pytest.raises(IntegrityError):
+        await session.commit()
+
+
+async def test_whatsapp_message_id_must_be_unique(session):
+    client = await _make_client(session)
+    conversation = Conversation(
+        business_id=client.business_id, client_id=client.id, channel=Channel.whatsapp
+    )
+    session.add(conversation)
+    await session.flush()
+
+    session.add(
+        Message(
+            conversation_id=conversation.id,
+            sender=Sender.client,
+            content="hi",
+            whatsapp_message_id="wamid.1",
+        )
+    )
+    await session.commit()
+
+    session.add(
+        Message(
+            conversation_id=conversation.id,
+            sender=Sender.client,
+            content="hi again",
+            whatsapp_message_id="wamid.1",
+        )
+    )
+    with pytest.raises(IntegrityError):
+        await session.commit()
+
+
+async def test_whatsapp_message_id_can_repeat_as_null(session):
+    client = await _make_client(session)
+    conversation = Conversation(
+        business_id=client.business_id, client_id=client.id, channel=Channel.whatsapp
+    )
+    session.add(conversation)
+    await session.flush()
+
+    session.add(Message(conversation_id=conversation.id, sender=Sender.agent, content="a"))
+    session.add(Message(conversation_id=conversation.id, sender=Sender.agent, content="b"))
+    await session.commit()  # must not raise — null != null in SQL

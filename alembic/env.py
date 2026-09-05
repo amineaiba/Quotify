@@ -11,8 +11,18 @@ from app.db.base import Base
 
 # Import every model module so it registers on Base.metadata before
 # autogenerate looks at it. A model that's never imported is invisible here,
-# even though it inherits from Base.
-from app.models import catalog  # noqa: F401
+# even though it inherits from Base — only `catalog` was listed until the
+# whatsapp-columns migration needed to autogenerate against `business` and
+# `conversation` too.
+#
+# Once all models are visible, autogenerate can still show two known false
+# positives, unrelated to any real schema drift: an `email` unique
+# constraint vs. index swap on `businesses` (fastapi-users declares it
+# differently than the DB has it), and phantom drops of the `channel`/
+# `sender` check constraints (no naming_convention set on Base — see
+# SQLAlchemy's autogenerate docs on enum check constraints). Don't apply
+# either without checking they're not accidentally reverting something.
+from app.models import business, catalog, conversation, refresh_token  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

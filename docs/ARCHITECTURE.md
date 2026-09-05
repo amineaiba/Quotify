@@ -29,6 +29,13 @@ created. `app/agent/` is the same: `graph.py` (active, LangGraph),
 `app/auth/` too: `users.py` (fastapi-users manager, JWT backend),
 `refresh.py` (refresh token create/rotate/revoke).
 
+`app/meta/` (`signature.py`, HMAC verification) and `app/whatsapp/`
+(`schemas.py`, `client.py`) are one package per external integration, same
+idea as `app/llm/` — Meta/WhatsApp's payload shapes stay out of
+`app/schemas/`, which is only for our own API's request/response models.
+`routers/webhooks/whatsapp.py` gets its own subpackage so Messenger/
+Instagram get their own files and paths later without conflict.
+
 `evals/` sits next to `tests/`, not inside it — evals score retrieval
 quality (`recall@k`) and cost real API calls, so they run by hand.
 
@@ -39,67 +46,72 @@ erDiagram
     BUSINESS ||--o{ CLIENT : has
     BUSINESS ||--o{ REFRESH_TOKEN : has
     BUSINESS ||--o{ CONVERSATION : has
+    BUSINESS ||--o{ CATALOG_ITEM : has
     CLIENT ||--o{ CONVERSATION : has
     CONVERSATION ||--o{ MESSAGE : has
     CATALOG_ITEM ||--o{ CATALOG_ITEM_TIER : has
 
     BUSINESS {
-        int id PK
+        uuid id PK
         string name
         string email
         string hashed_password
         string api_key
+        string whatsapp_phone_number_id "unique, nullable"
         bool is_active
         bool is_superuser
         bool is_verified
         datetime created_at
     }
     CLIENT {
-        int id PK
-        int business_id FK
+        uuid id PK
+        uuid business_id FK
         string phone_number
         string name
         datetime created_at
     }
     REFRESH_TOKEN {
-        int id PK
-        int business_id FK
+        uuid id PK
+        uuid business_id FK
         string token_hash
         datetime expires_at
         datetime revoked_at
         datetime created_at
     }
     CONVERSATION {
-        int id PK
-        int business_id FK
-        int client_id FK
+        uuid id PK
+        uuid business_id FK
+        uuid client_id FK
         string channel
         datetime created_at
     }
     MESSAGE {
-        int id PK
-        int conversation_id FK
+        uuid id PK
+        uuid conversation_id FK
         string sender
         string content
+        string whatsapp_message_id "unique, nullable — dedups retried webhooks"
         datetime created_at
     }
     CATALOG_ITEM {
-        int id PK
+        uuid id PK
+        uuid business_id FK
         string name
         string unit
         vector embedding
     }
     CATALOG_ITEM_TIER {
-        int id PK
-        int catalog_item_id FK
+        uuid id PK
+        uuid catalog_item_id FK
         int min_qty
         int unit_price
     }
 ```
 
-`CatalogItem` isn't scoped to a `Business` yet — deferred to the Catalog
-management phase, see `ROADMAP.md`. Full target model (including `Quote`,
-not built yet) is in `docs/specs/2026-08-28-data-model-design.md`.
+`(business_id, client_id, channel)` is unique on `CONVERSATION` — one
+conversation per client per channel; no separate "closed" state yet. Full
+target model (including `Quote`, not built yet) is in
+`docs/specs/2026-08-28-data-model-design.md`.
 
 ## Request flow (current)
 
@@ -129,6 +141,37 @@ sequenceDiagram
 Single message in, single reply out — no conversation persistence yet.
 `ItemNotFound` and `BelowMinimumQuantity` are caught inside `dispatch` and
 fed back to Gemini as text instead of crashing the loop.
+
+## Request flow — WhatsApp webhook
+
+```mermaid
+sequenceDiagram
+    participant Meta
+    participant R as routers/webhooks/whatsapp.py
+    participant DB as Postgres
+    participant BG as background task
+    participant L as agent/graph.py (run_agent)
+    participant W as whatsapp/client.py
+
+    Meta->>R: POST /api/v1/webhooks/whatsapp
+    R->>R: verify_signature (app/meta/signature.py)
+    R->>DB: find Business by whatsapp_phone_number_id
+    R->>DB: dedup by whatsapp_message_id
+    R->>DB: get_or_create client/conversation, save inbound message (commit)
+    R-->>Meta: 200
+    R->>BG: schedule reply (own DB session)
+    BG->>L: run_agent(session, message)
+    L-->>BG: AgentReply
+    BG->>DB: save agent reply
+    BG->>W: send_message(...)
+```
+
+The agent's reply happens after the `200` is returned — Meta doesn't wait
+for it. The background task opens its own DB session
+(`get_session_factory`, overridable in tests); the request's session is
+gone by the time it runs. A failure in the background task is logged, not
+retried — see `docs/specs/2026-09-02-whatsapp-webhook-design.md` for the
+accepted gap and why (Hardening phase closes it).
 
 ## Decisions already made
 

@@ -38,3 +38,6 @@ learning/
 # --- raw AI-agent skill output (specs/plans) — kept local, not portfolio docs ---
 docs/specs/
 docs/plans/
+
+# --- private notes, just between Amine and Claude, never pushed ---
+CLAUDE.local.md
