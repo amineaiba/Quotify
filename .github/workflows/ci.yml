@@ -29,6 +29,10 @@ jobs:
       # and evals don't run here (see evals/recall_at_k.py, CLAUDE.md).
       GEMINI_API_KEY: ci-placeholder
       JWT_SECRET: ci-placeholder
+      # Nothing in the test suite hits Meta/WhatsApp either — same reasoning as above.
+      META_APP_SECRET: ci-placeholder
+      META_VERIFY_TOKEN: ci-placeholder
+      WHATSAPP_ACCESS_TOKEN: ci-placeholder
 
     steps:
       - uses: actions/checkout@v4
