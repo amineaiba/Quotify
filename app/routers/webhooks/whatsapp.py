@@ -4,13 +4,14 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, R
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.agent.graph import run_agent
+from app.agent.graph import messages_to_history, run_agent
 from app.core.config import get_settings
 from app.db.session import get_session, get_session_factory
 from app.meta.signature import verify_signature
 from app.models.conversation import Channel, Sender
 from app.services.conversation import (
     get_business_by_whatsapp_phone_number_id,
+    get_conversation_history,
     get_or_create_client,
     get_or_create_conversation,
     message_exists,
@@ -88,7 +89,6 @@ async def receive_webhook(
         background_tasks.add_task(
             _reply_to_message,
             conversation_id=conversation.id,
-            message_text=inbound.text,
             phone_number_id=inbound.phone_number_id,
             to_number=inbound.from_number,
             session_factory=session_factory,
@@ -99,7 +99,6 @@ async def receive_webhook(
 
 async def _reply_to_message(
     conversation_id,
-    message_text: str,
     phone_number_id: str,
     to_number: str,
     session_factory: async_sessionmaker[AsyncSession],
@@ -111,7 +110,8 @@ async def _reply_to_message(
     """
     try:
         async with session_factory() as session:
-            reply = await run_agent(session, message_text)
+            history = messages_to_history(await get_conversation_history(session, conversation_id))
+            reply = await run_agent(session, history)
             await save_message(session, conversation_id, Sender.agent, reply.message)
             await send_message(phone_number_id, to_number, reply.message)
     except Exception:

@@ -124,8 +124,11 @@ sequenceDiagram
     participant T as agent/tools.py (dispatch)
     participant DB as Postgres
 
-    C->>R: POST /api/v1/agent/messages {message}
-    R->>L: run_agent(session, message)
+    C->>R: POST /api/v1/agent/messages {message, conversation_id?}
+    alt conversation_id given
+        R->>DB: save inbound message, load full conversation history
+    end
+    R->>L: run_agent(session, history)
     loop until no function calls or MAX_TURNS
         L->>G: generate_content(history)
         G-->>L: text or function_call(s)
@@ -135,10 +138,19 @@ sequenceDiagram
         T-->>L: result (or caught domain error)
     end
     L-->>R: AgentReply(status, message, lines)
-    R-->>C: 200 AgentReply / 503 on MAX_TURNS
+    alt conversation_id given
+        R->>DB: save agent reply
+    end
+    R-->>C: 200 AgentReply / 404 unknown conversation / 503 on MAX_TURNS
 ```
 
-Single message in, single reply out — no conversation persistence yet.
+`run_agent` takes a ready-made history (`list[types.Content]`), not a bare
+string — it doesn't know or care whether that history came from one
+throwaway message or a saved conversation. Building that history is the
+caller's job: `messages_to_history` (`app/agent/graph.py`) converts saved
+`Message` rows into Gemini's format (`client`/`staff` → `"user"`,
+`agent` → `"model"`). Without a `conversation_id`, the endpoint behaves as
+before — one message in, one reply out, nothing saved.
 `ItemNotFound` and `BelowMinimumQuantity` are caught inside `dispatch` and
 fed back to Gemini as text instead of crashing the loop.
 
@@ -160,7 +172,8 @@ sequenceDiagram
     R->>DB: get_or_create client/conversation, save inbound message (commit)
     R-->>Meta: 200
     R->>BG: schedule reply (own DB session)
-    BG->>L: run_agent(session, message)
+    BG->>DB: load full conversation history
+    BG->>L: run_agent(session, history)
     L-->>BG: AgentReply
     BG->>DB: save agent reply
     BG->>W: send_message(...)
