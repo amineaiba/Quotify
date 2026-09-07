@@ -13,6 +13,7 @@ from app.agent.tools import TOOLS, dispatch
 from app.core.config import get_settings
 from app.core.exceptions import AgentTurnLimitExceeded
 from app.llm.client import get_client
+from app.models.conversation import Message, Sender
 from app.schemas.agent import AgentReply
 from app.schemas.pricing import PriceBreakdown
 
@@ -28,6 +29,20 @@ class AgentState(TypedDict):
 
 def _function_calls(content: types.Content) -> list[types.FunctionCall]:
     return [part.function_call for part in content.parts if part.function_call]
+
+
+def user_message(text: str) -> types.Content:
+    """A single one-off turn — used when there's no conversation to load history from."""
+    return types.Content(role="user", parts=[types.Part(text=text)])
+
+
+def messages_to_history(messages: list[Message]) -> list[types.Content]:
+    """Converts saved conversation turns into Gemini's history format. Client and
+    staff messages are both a human talking to the model, so both map to "user"."""
+    role = {Sender.client: "user", Sender.staff: "user", Sender.agent: "model"}
+    return [
+        types.Content(role=role[m.sender], parts=[types.Part(text=m.content)]) for m in messages
+    ]
 
 
 async def call_model(state: AgentState, config: RunnableConfig) -> dict:
@@ -82,9 +97,9 @@ graph.add_edge("run_tools", "call_model")
 COMPILED_GRAPH = graph.compile()
 
 
-async def run_agent(session: AsyncSession, message: str) -> AgentReply:
+async def run_agent(session: AsyncSession, history: list[types.Content]) -> AgentReply:
     initial_state: AgentState = {
-        "history": [types.Content(role="user", parts=[types.Part(text=message)])],
+        "history": history,
         "lines": [],
     }
     config = {

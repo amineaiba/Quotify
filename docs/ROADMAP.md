@@ -13,7 +13,7 @@ gets its own brainstorming session before it's built; see
 - [x] LangGraph rebuild of the agent loop — replaces the hand-written
       version as the active implementation (that version stays in the repo,
       frozen, not extended further)
-- [ ] Multi-turn conversation state for the agent (depends on the software
+- [x] Multi-turn conversation state for the agent (depends on the software
       track's conversations table)
 
 ## Software track

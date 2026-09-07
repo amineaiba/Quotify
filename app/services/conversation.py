@@ -32,6 +32,12 @@ async def get_or_create_client(
     return client
 
 
+async def get_conversation_by_id(
+    session: AsyncSession, conversation_id: uuid.UUID
+) -> Conversation | None:
+    return await session.get(Conversation, conversation_id)
+
+
 async def get_or_create_conversation(
     session: AsyncSession, business_id: uuid.UUID, client_id: uuid.UUID, channel: Channel
 ) -> Conversation:
@@ -49,6 +55,18 @@ async def get_or_create_conversation(
     session.add(conversation)
     await session.commit()
     return conversation
+
+
+async def get_conversation_history(
+    session: AsyncSession, conversation_id: uuid.UUID
+) -> list[Message]:
+    stmt = (
+        select(Message)
+        .where(Message.conversation_id == conversation_id)
+        .order_by(Message.created_at)
+    )
+    result = await session.execute(stmt)
+    return list(result.scalars().all())
 
 
 async def message_exists(session: AsyncSession, whatsapp_message_id: str) -> bool:

@@ -1,8 +1,17 @@
 import pytest
 from google.genai import types
 
-from app.agent.graph import MAX_TURNS, AgentState, call_model, run_agent, run_tools
+from app.agent.graph import (
+    MAX_TURNS,
+    AgentState,
+    call_model,
+    messages_to_history,
+    run_agent,
+    run_tools,
+    user_message,
+)
 from app.core.exceptions import AgentTurnLimitExceeded
+from app.models.conversation import Message, Sender
 from tests.conftest import (
     FLYER_ID,
     GraphFakeClient,
@@ -77,7 +86,7 @@ async def test_run_agent_prices_item_and_returns_quote_ready(session, monkeypatc
     client_double = GraphFakeClient(responses)
     monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 
-    reply = await run_agent(session, "500 flyers A5 recto verso, chhal?")
+    reply = await run_agent(session, [user_message("500 flyers A5 recto verso, chhal?")])
 
     assert reply.status == "quote_ready"
     assert reply.lines[0].total == 9500
@@ -89,7 +98,7 @@ async def test_run_agent_no_tool_calls_returns_needs_info(session, monkeypatch):
     client_double = GraphFakeClient(responses)
     monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 
-    reply = await run_agent(session, "svp le prix des flyers")
+    reply = await run_agent(session, [user_message("svp le prix des flyers")])
 
     assert reply.status == "needs_info"
     assert reply.lines == []
@@ -105,7 +114,7 @@ async def test_run_agent_below_minimum_continues_without_crashing(session, monke
     client_double = GraphFakeClient(responses)
     monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 
-    reply = await run_agent(session, "50 flyers A5 recto verso")
+    reply = await run_agent(session, [user_message("50 flyers A5 recto verso")])
 
     assert reply.status == "needs_info"
     assert reply.lines == []
@@ -122,4 +131,24 @@ async def test_run_agent_raises_after_max_turns(session, monkeypatch):
     monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 
     with pytest.raises(AgentTurnLimitExceeded):
-        await run_agent(session, "500 flyers")
+        await run_agent(session, [user_message("500 flyers")])
+
+
+# --- messages_to_history ---------------------------------------------------
+
+
+def test_messages_to_history_maps_sender_to_role():
+    messages = [
+        Message(sender=Sender.client, content="500 flyers, chhal?"),
+        Message(sender=Sender.agent, content="9500 DA."),
+        Message(sender=Sender.staff, content="je confirme le prix."),
+    ]
+
+    history = messages_to_history(messages)
+
+    assert [c.role for c in history] == ["user", "model", "user"]
+    assert [c.parts[0].text for c in history] == [
+        "500 flyers, chhal?",
+        "9500 DA.",
+        "je confirme le prix.",
+    ]
