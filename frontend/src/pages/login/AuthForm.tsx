@@ -5,9 +5,7 @@ import { Button } from "../../components/Button";
 import { ApiError } from "../../lib/api";
 import { useAuth } from "../../lib/AuthContext";
 import { AUTH_ERROR_MESSAGES } from "../../lib/auth";
-
-const inputClass =
-  "w-full rounded-lg border border-line-strong bg-surface px-3.5 py-2.5 text-sm text-ink outline-none focus:border-accent focus:shadow-[0_0_0_3px_color-mix(in_oklab,var(--accent)_18%,transparent)]";
+import { inputClass } from "../../lib/styles";
 
 export function AuthForm() {
   const [isSignup, setIsSignup] = useState(false);
@@ -19,7 +17,7 @@ export function AuthForm() {
 
   const mutation = useMutation({
     mutationFn: () => (isSignup ? register({ name, email, password }) : login(email, password)),
-    onSuccess: () => navigate("/inbox"),
+    onSuccess: () => navigate("/catalog"),
   });
 
   const errorMessage =
