@@ -1,12 +1,21 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import { Landing } from "./pages/landing/Landing";
+import { Login } from "./pages/login/Login";
 import { Placeholder } from "./pages/Placeholder";
+import { useAuth } from "./lib/AuthContext";
+import { useTheme } from "./lib/useTheme";
 
 function App() {
+  const { theme, toggleTheme } = useTheme();
+  const { isAuthenticated, isLoading } = useAuth();
+
   return (
     <Routes>
-      <Route path="/" element={<Landing />} />
-      <Route path="/login" element={<Placeholder title="Sign in" phase="Auth — phase 3" />} />
+      <Route path="/" element={<Landing theme={theme} onToggleTheme={toggleTheme} />} />
+      <Route
+        path="/login"
+        element={isAuthenticated && !isLoading ? <Navigate to="/inbox" replace /> : <Login />}
+      />
       <Route
         path="/inbox"
         element={<Placeholder title="Conversations" phase="Inbox — phase 5" />}
