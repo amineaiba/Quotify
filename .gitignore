@@ -23,6 +23,7 @@ venv/
 
 # --- editors / OS ---
 .vscode/
+.zed/
 .idea/
 .DS_Store
 Thumbs.db

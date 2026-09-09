@@ -3,7 +3,7 @@ import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import InvalidRefreshToken
@@ -31,18 +31,28 @@ async def create_refresh_token(session: AsyncSession, business_id: uuid.UUID) ->
 
 
 async def rotate_refresh_token(session: AsyncSession, raw_token: str) -> tuple[Business, str]:
-    token = (
+    # Single atomic UPDATE, not a SELECT then a later write: two concurrent
+    # calls with the same token could otherwise both read revoked_at as NULL
+    # before either commits. The WHERE clause makes "still unused" and "mark
+    # used" one step, so at most one concurrent caller ever gets a row back.
+    business_id = (
         await session.execute(
-            select(RefreshToken).where(RefreshToken.token_hash == _hash(raw_token))
+            update(RefreshToken)
+            .where(
+                RefreshToken.token_hash == _hash(raw_token),
+                RefreshToken.revoked_at.is_(None),
+                RefreshToken.expires_at >= datetime.now(UTC),
+            )
+            .values(revoked_at=datetime.now(UTC))
+            .returning(RefreshToken.business_id)
         )
     ).scalar_one_or_none()
 
-    if token is None or token.revoked_at is not None or token.expires_at < datetime.now(UTC):
+    if business_id is None:
         raise InvalidRefreshToken()
 
-    business = await session.get(Business, token.business_id)
-    token.revoked_at = datetime.now(UTC)
-    new_raw_token = await create_refresh_token(session, token.business_id)
+    business = await session.get(Business, business_id)
+    new_raw_token = await create_refresh_token(session, business_id)
 
     return business, new_raw_token
 

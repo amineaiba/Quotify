@@ -1,5 +1,8 @@
+import asyncio
+
 import pytest
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.auth.refresh import create_refresh_token, revoke_refresh_token, rotate_refresh_token
 from app.core.exceptions import InvalidRefreshToken
@@ -48,6 +51,29 @@ async def test_rotate_refresh_token_returns_new_token_and_revokes_old(session):
 async def test_rotate_refresh_token_rejects_unknown_token(session):
     with pytest.raises(InvalidRefreshToken):
         await rotate_refresh_token(session, "not-a-real-token")
+
+
+async def test_rotate_refresh_token_concurrent_calls_only_one_wins(_test_db_engine):
+    # Regression test: rotate_refresh_token used to read-then-write in two
+    # separate steps, so two callers racing the same token could both pass
+    # the "still unused" check before either committed. Each attempt below
+    # uses its own session (its own DB transaction), the way two real
+    # concurrent requests would, to actually exercise that race.
+    factory = async_sessionmaker(_test_db_engine, expire_on_commit=False)
+    async with factory() as setup_session:
+        business = await _make_business(setup_session)
+        raw_token = await create_refresh_token(setup_session, business.id)
+
+    async def attempt():
+        async with factory() as s:
+            try:
+                return await rotate_refresh_token(s, raw_token)
+            except InvalidRefreshToken:
+                return None
+
+    results = await asyncio.gather(attempt(), attempt())
+    successes = [r for r in results if r is not None]
+    assert len(successes) == 1
 
 
 async def test_revoke_refresh_token_marks_revoked(session):
