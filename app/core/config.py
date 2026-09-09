@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     meta_verify_token: str
     whatsapp_access_token: str
     log_level: str = "INFO"
+    cors_origins: list[str] = ["http://localhost:5173"]
 
 
 @lru_cache

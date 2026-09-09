@@ -32,11 +32,21 @@ Ordered by dependency — each phase only needs what came before it.
    way for a business to connect their own WhatsApp number yet, see phase 5.
 4. [ ] **Guardrails** — confidence checks, hold-for-review queue, rate
    limits in front of auto-send
-5. [ ] **Frontend dashboard** — conversations view, catalog management UI,
-   quote history, **"Connect WhatsApp" via Meta's Embedded Signup** (business
-   owner logs into their own Facebook Business account, picks their number,
-   Meta hands us `phone_number_id` + token automatically — replaces today's
-   manual DB update)
+5. [ ] **Frontend dashboard** — React (Vite + TS + Tailwind), `frontend/`
+   folder, npm, runs locally not in Docker. Sub-phases, in order:
+   1. [ ] Scaffold — Vite/React/TS/Tailwind, API client, routing skeleton,
+      CORS added to `app/main.py`
+   2. [ ] Landing page — static, no backend dependency
+   3. [ ] Auth — login/signup wired to real endpoints
+   4. [ ] Catalog — table + add/edit/delete, wired to real CRUD endpoints
+   5. [ ] Conversations/inbox + thread view, wired to real data (no pricing-
+      reasoning panel or PDF download yet — not built on the backend)
+   6. [ ] Review queue + quote history — blocked on `Quote` model
+      (Guardrails phase)
+   7. [ ] **"Connect WhatsApp" via Meta's Embedded Signup** (business owner
+      logs into their own Facebook Business account, picks their number,
+      Meta hands us `phone_number_id` + token automatically — replaces
+      today's manual DB update)
 6. [ ] **Hardening** — background jobs/retries for webhook delivery and
    failed sends, logging, error tracking, basic metrics, email
    verification + password reset (needs real email infra — skipped while

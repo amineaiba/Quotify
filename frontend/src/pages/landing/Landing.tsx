@@ -1,0 +1,22 @@
+import { useTheme } from "../../lib/useTheme";
+import { ClosingCta } from "./ClosingCta";
+import { Hero } from "./Hero";
+import { HowItWorks } from "./HowItWorks";
+import { LandingFooter } from "./LandingFooter";
+import { LandingHeader } from "./LandingHeader";
+
+export function Landing() {
+  const { theme, toggleTheme } = useTheme();
+
+  return (
+    <div className="flex min-h-screen flex-col bg-bg text-ink">
+      <LandingHeader theme={theme} onToggleTheme={toggleTheme} />
+      <main className="flex flex-1 flex-col">
+        <Hero />
+        <HowItWorks />
+        <ClosingCta />
+      </main>
+      <LandingFooter />
+    </div>
+  );
+}

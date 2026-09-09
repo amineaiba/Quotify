@@ -27,6 +27,12 @@ query is noise, not professionalism. Build the right thing, at the right size.
 Comments and docstrings: light, one line, only when the code doesn't already
 say it. Match `services/catalog.py` — not a tutorial in the source file.
 
+**Frontend specifics:** mobile matters — carry over the design's responsive
+rules, don't skip them. Split each screen into small files by section, not
+one long page file. Pull out a shared component once something is actually
+reused twice, not before — same "no layer nothing needs yet" rule as the
+backend.
+
 ## Local dev
 
 Only the `db` service runs in Docker (`pgvector/pgvector:pg17`, host port
@@ -42,20 +48,29 @@ Two env files: `.env` (local — app reads this by default) and `.env.docker`
 (used only by `docker-compose.yml`, for a full `docker compose up` when
 someone needs the whole stack containerized, e.g. prod-like testing).
 
+`frontend/` (Vite + React + TS + Tailwind) runs locally too, same reason —
+not in Docker.
+
+```
+cd frontend && npm run dev
+```
+
+**Checking UI visually:** Playwright is installed in `frontend/` (dev
+dependency, Chromium browser already downloaded). Use it headless — no
+window opens — to screenshot a running page instead of asking Amine to
+open a browser:
+
+```
+cd frontend && npx playwright screenshot --viewport-size=1280,800 http://localhost:5173/<path> <file>.png
+```
+
 ## Decisions already made
 
 Never put a real client's data through the Gemini key — free tier, Google
 can use it. Portfolio project: fake catalog, fake client messages only.
 
-Everything else — stack, why the agent loop is hand-written before
-LangGraph, why any other irreversible call was made — lives in
-`docs/ARCHITECTURE.md` and `docs/adr/`. These aren't open questions; check
-with Amine before proposing a different stack or approach.
-
-## Repo layout
-
-See `docs/ARCHITECTURE.md` for the current layer structure and where each
-kind of code lives.
+Stack and approach are already decided — check with Amine before proposing
+a different one.
 
 ## Where things are
 

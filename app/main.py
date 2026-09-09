@@ -1,6 +1,7 @@
 import logging
 
 from fastapi import Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,7 +17,17 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 
+logging.getLogger("app").setLevel(logging.DEBUG)
+
 app = FastAPI(title="Quotify")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=get_settings().cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(catalog_router, prefix="/api/v1/catalog", tags=["catalog"])
 app.include_router(agent_router, prefix="/api/v1/agent", tags=["agent"])
