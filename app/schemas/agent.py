@@ -15,3 +15,4 @@ class AgentReply(BaseModel):
     status: Literal["needs_info", "quote_ready"]
     message: str
     lines: list[PriceBreakdown] = []
+    confidence: int | None = None

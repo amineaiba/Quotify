@@ -30,8 +30,19 @@ Ordered by dependency — each phase only needs what came before it.
    save inbound message → call agent → send reply back. `Business.
    whatsapp_phone_number_id` is wired by hand (SQL) for now — no self-serve
    way for a business to connect their own WhatsApp number yet, see phase 5.
-4. [ ] **Guardrails** — confidence checks, hold-for-review queue, rate
-   limits in front of auto-send
+4. [x] **Guardrails** — the engine only, no staff-facing UI/API yet (that's
+   phase 5, once the dashboard exists to use it). Verified with automated
+   tests. Sub-phases, in order:
+   1. [x] `Quote` model — one row per agent reply (draft/final message,
+      confidence, status, hold_reason, price lines, timestamps)
+   2. [x] Confidence check — agent self-reports a confidence score;
+      below threshold → held instead of auto-sent. Plan for a second
+      LLM-judge pass as a later addition, not built now.
+   3. [x] Rate limiting — Redis, per-conversation window (new local dev
+      service, `docker-compose.yml`); fails open (limiting stops, replies
+      still send) if Redis is unreachable — see ADR
+   4. [x] Gate `_reply_to_message` — rate limit then confidence check
+      before save+send; always writes a `Quote` row either way
 5. [ ] **Frontend dashboard** — React (Vite + TS + Tailwind), `frontend/`
    folder, npm, runs locally not in Docker. Sub-phases, in order:
    1. [ ] Scaffold — Vite/React/TS/Tailwind, API client, routing skeleton,
@@ -41,9 +52,11 @@ Ordered by dependency — each phase only needs what came before it.
    4. [ ] Catalog — table + add/edit/delete, wired to real CRUD endpoints
    5. [ ] Conversations/inbox + thread view, wired to real data (no pricing-
       reasoning panel or PDF download yet — not built on the backend)
-   6. [ ] Review queue + quote history — blocked on `Quote` model
-      (Guardrails phase)
-   7. [ ] **"Connect WhatsApp" via Meta's Embedded Signup** (business owner
+   6. [ ] Review endpoints (backend) — `GET /quotes`, `approve`, `reject`.
+      Blocked on `Quote` model (Guardrails phase)
+   7. [ ] Review queue + quote history screen — wired to the endpoints
+      above
+   8. [ ] **"Connect WhatsApp" via Meta's Embedded Signup** (business owner
       logs into their own Facebook Business account, picks their number,
       Meta hands us `phone_number_id` + token automatically — replaces
       today's manual DB update)

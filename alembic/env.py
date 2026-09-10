@@ -22,7 +22,7 @@ from app.db.base import Base
 # `sender` check constraints (no naming_convention set on Base — see
 # SQLAlchemy's autogenerate docs on enum check constraints). Don't apply
 # either without checking they're not accidentally reverting something.
-from app.models import business, catalog, conversation, refresh_token  # noqa: F401
+from app.models import business, catalog, conversation, quote, refresh_token  # noqa: F401
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

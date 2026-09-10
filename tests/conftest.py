@@ -20,6 +20,7 @@ from app.models.conversation import (  # noqa: F401 — registers tables for cre
     Message,
     Sender,
 )
+from app.models.quote import Quote  # noqa: F401 — registers table for create_all
 from app.models.refresh_token import RefreshToken  # noqa: F401 — registers table for create_all
 
 # Kept as URL objects, not str(url) — that masks the password with "***".

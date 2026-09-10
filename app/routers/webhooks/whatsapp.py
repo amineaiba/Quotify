@@ -6,9 +6,11 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.agent.graph import messages_to_history, run_agent
 from app.core.config import get_settings
+from app.core.rate_limit import is_rate_limited
 from app.db.session import get_session, get_session_factory
 from app.meta.signature import verify_signature
 from app.models.conversation import Channel, Sender
+from app.models.quote import HoldReason, QuoteStatus
 from app.services.conversation import (
     get_business_by_whatsapp_phone_number_id,
     get_conversation_history,
@@ -17,6 +19,7 @@ from app.services.conversation import (
     message_exists,
     save_message,
 )
+from app.services.quotes import save_quote
 from app.whatsapp.client import send_message
 from app.whatsapp.schemas import WebhookPayload, extract_text_messages
 
@@ -112,7 +115,26 @@ async def _reply_to_message(
         async with session_factory() as session:
             history = messages_to_history(await get_conversation_history(session, conversation_id))
             reply = await run_agent(session, history)
-            await save_message(session, conversation_id, Sender.agent, reply.message)
-            await send_message(phone_number_id, to_number, reply.message)
+
+            hold_reason: HoldReason | None = None
+            if await is_rate_limited(conversation_id):
+                hold_reason = HoldReason.rate_limited
+            elif reply.confidence is None or reply.confidence < get_settings().confidence_threshold:
+                hold_reason = HoldReason.low_confidence
+
+            status = QuoteStatus.pending if hold_reason else QuoteStatus.auto_sent
+            await save_quote(
+                session,
+                conversation_id,
+                reply.message,
+                reply.confidence,
+                reply.lines,
+                status,
+                hold_reason,
+            )
+
+            if status == QuoteStatus.auto_sent:
+                await save_message(session, conversation_id, Sender.agent, reply.message)
+                await send_message(phone_number_id, to_number, reply.message)
     except Exception:
         logger.exception("failed to reply to conversation_id=%s", conversation_id)

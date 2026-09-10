@@ -33,6 +33,9 @@ jobs:
       META_APP_SECRET: ci-placeholder
       META_VERIFY_TOKEN: ci-placeholder
       WHATSAPP_ACCESS_TOKEN: ci-placeholder
+      # Tests fake the Redis client (tests/test_rate_limit.py) — nothing
+      # connects for real, this just satisfies the required setting.
+      REDIS_URL: redis://localhost:6379/0
 
     steps:
       - uses: actions/checkout@v4

@@ -4,6 +4,7 @@ from google.genai import types
 from app.agent.graph import (
     MAX_TURNS,
     AgentState,
+    _extract_confidence,
     call_model,
     messages_to_history,
     run_agent,
@@ -132,6 +133,48 @@ async def test_run_agent_raises_after_max_turns(session, monkeypatch):
 
     with pytest.raises(AgentTurnLimitExceeded):
         await run_agent(session, [user_message("500 flyers")])
+
+
+# --- _extract_confidence ----------------------------------------------------
+
+
+def test_extract_confidence_strips_trailing_line():
+    text = "500 flyers A5 recto-verso : 9500 DA.\nCONFIDENCE: 92"
+    clean, confidence = _extract_confidence(text)
+    assert clean == "500 flyers A5 recto-verso : 9500 DA."
+    assert confidence == 92
+
+
+def test_extract_confidence_returns_none_when_missing():
+    clean, confidence = _extract_confidence("Quelle quantité voulez-vous ?")
+    assert clean == "Quelle quantité voulez-vous ?"
+    assert confidence is None
+
+
+def test_extract_confidence_returns_none_when_out_of_range():
+    text = "9500 DA.\nCONFIDENCE: 150"
+    clean, confidence = _extract_confidence(text)
+    assert clean == "9500 DA."
+    assert confidence is None
+
+
+async def test_run_agent_sets_confidence_from_final_reply(session, monkeypatch):
+    responses = [graph_text_content("9500 DA.\nCONFIDENCE: 88")]
+    monkeypatch.setattr("app.agent.graph.get_client", lambda: GraphFakeClient(responses))
+
+    reply = await run_agent(session, [user_message("chhal 500 flyers?")])
+
+    assert reply.message == "9500 DA."
+    assert reply.confidence == 88
+
+
+async def test_run_agent_confidence_none_when_agent_omits_it(session, monkeypatch):
+    responses = [graph_text_content("Quelle quantité voulez-vous ?")]
+    monkeypatch.setattr("app.agent.graph.get_client", lambda: GraphFakeClient(responses))
+
+    reply = await run_agent(session, [user_message("svp le prix")])
+
+    assert reply.confidence is None
 
 
 # --- messages_to_history ---------------------------------------------------
