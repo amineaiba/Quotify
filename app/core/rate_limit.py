@@ -1,6 +1,5 @@
 import logging
 import uuid
-from functools import lru_cache
 
 import redis.asyncio as redis
 from redis.exceptions import RedisError
@@ -12,11 +11,10 @@ logger = logging.getLogger(__name__)
 RATE_LIMIT_WINDOW_SECONDS = 3600
 
 
-@lru_cache
 def get_redis_client() -> redis.Redis:
     return redis.from_url(get_settings().redis_url)
 
-#todo understand this 
+
 async def is_rate_limited(conversation_id: uuid.UUID) -> bool:
     key = f"ratelimit:conversation:{conversation_id}"
     try:
