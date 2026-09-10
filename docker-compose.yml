@@ -16,6 +16,11 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"   # 6380 to avoid clashing with a local Redis on 6379
+
   api:
     build:
       context: .

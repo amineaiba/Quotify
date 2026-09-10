@@ -35,12 +35,13 @@ backend.
 
 ## Local dev
 
-Only the `db` service runs in Docker (`pgvector/pgvector:pg17`, host port
-`5433`). The API runs locally with `uv run uvicorn`, not in Docker — faster
-reload, no image rebuild per change.
+`db` and `redis` run in Docker (`pgvector/pgvector:pg17` on host port
+`5433`, `redis:7-alpine` on host port `6380`). The API runs locally with
+`uv run uvicorn`, not in Docker — faster reload, no image rebuild per
+change.
 
 ```
-docker compose up -d db
+docker compose up -d db redis
 uv run uvicorn app.main:app --reload
 ```
 

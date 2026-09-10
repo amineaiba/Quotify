@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     whatsapp_access_token: str
     log_level: str = "INFO"
     cors_origins: list[str] = ["http://localhost:5173"]
+    redis_url: str
+    rate_limit_max_per_hour: int = 10
 
 
 @lru_cache
