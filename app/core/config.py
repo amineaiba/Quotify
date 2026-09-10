@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173"]
     redis_url: str
     rate_limit_max_per_hour: int = 10
+    confidence_threshold: int = 70
 
 
 @lru_cache
