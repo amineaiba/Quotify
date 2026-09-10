@@ -2,18 +2,20 @@
 
 Current-state summary. Distilled from `docs/specs/` after each
 phase ships — this file describes what's built, not what's planned (see
-`ROADMAP.md`) and not why a past call was made (see `docs/adr/`).
+`ROADMAP.md`) and not why a hard-to-reverse decision was made (see
+`docs/adr/`).
 
 ## Stack
 
 FastAPI + PostgreSQL + pgvector. Gemini (`google-genai`, free tier) for
 embeddings and function calling. SQLAlchemy + Alembic for the DB layer.
-LangGraph for the agent loop.
+LangGraph for the agent loop. Redis for the guardrails rate limiter —
+fails open (rate limiting stops, replies still send) if unreachable.
 
-Locally, only `db` runs in Docker (`pgvector/pgvector:pg17`, host port
-`5433`); the API runs with `uv run uvicorn app.main:app --reload` for fast
-reload. A full `docker compose up` (API included, `.env.docker`) is for a
-prod-like run.
+Locally, `db` and `redis` run in Docker (`pgvector/pgvector:pg17` on host
+port `5433`, `redis:7-alpine` on host port `6380`); the API runs with
+`uv run uvicorn app.main:app --reload` for fast reload. A full
+`docker compose up` (API included, `.env.docker`) is for a prod-like run.
 
 ## Repo layout
 
@@ -49,6 +51,7 @@ erDiagram
     BUSINESS ||--o{ CATALOG_ITEM : has
     CLIENT ||--o{ CONVERSATION : has
     CONVERSATION ||--o{ MESSAGE : has
+    CONVERSATION ||--o{ QUOTE : has
     CATALOG_ITEM ||--o{ CATALOG_ITEM_TIER : has
 
     BUSINESS {
@@ -106,12 +109,23 @@ erDiagram
         int min_qty
         int unit_price
     }
+    QUOTE {
+        uuid id PK
+        uuid conversation_id FK
+        string draft_message
+        string final_message "nullable — set if staff edits before approving (phase 5)"
+        int confidence "nullable — agent's self-reported 0-100 score"
+        string status "pending | approved | rejected | auto_sent"
+        string hold_reason "nullable — low_confidence | rate_limited"
+        json lines "nullable — price breakdown, if any"
+        datetime created_at
+        datetime reviewed_at "nullable — set in phase 5"
+    }
 ```
 
 `(business_id, client_id, channel)` is unique on `CONVERSATION` — one
-conversation per client per channel; no separate "closed" state yet. Full
-target model (including `Quote`, not built yet) is in
-`docs/specs/2026-08-28-data-model-design.md`.
+conversation per client per channel; no separate "closed" state yet. One
+`QUOTE` row is written per agent reply, whether it auto-sent or was held.
 
 ## Request flow (current)
 
@@ -163,6 +177,8 @@ sequenceDiagram
     participant DB as Postgres
     participant BG as background task
     participant L as agent/graph.py (run_agent)
+    participant RL as core/rate_limit.py
+    participant Redis
     participant W as whatsapp/client.py
 
     Meta->>R: POST /api/v1/webhooks/whatsapp
@@ -174,9 +190,23 @@ sequenceDiagram
     R->>BG: schedule reply (own DB session)
     BG->>DB: load full conversation history
     BG->>L: run_agent(session, history)
-    L-->>BG: AgentReply
-    BG->>DB: save agent reply
-    BG->>W: send_message(...)
+    L-->>BG: AgentReply (message, confidence)
+    BG->>RL: is_rate_limited(conversation_id)
+    RL->>Redis: INCR / EXPIRE
+    alt Redis unreachable
+        Redis-->>RL: RedisError
+        RL-->>BG: False (fails open — see ADR 0002)
+    else
+        Redis-->>RL: count
+        RL-->>BG: bool
+    end
+    BG->>DB: save_quote (status: auto_sent, or pending + hold_reason)
+    alt auto_sent (rate limit ok, confidence ≥ threshold)
+        BG->>DB: save agent reply as Message
+        BG->>W: send_message(...)
+    else pending (rate limited, or low/missing confidence)
+        Note over BG: nothing sent — held for staff review (phase 5)
+    end
 ```
 
 The agent's reply happens after the `200` is returned — Meta doesn't wait
@@ -186,14 +216,7 @@ gone by the time it runs. A failure in the background task is logged, not
 retried — see `docs/specs/2026-09-02-whatsapp-webhook-design.md` for the
 accepted gap and why (Hardening phase closes it).
 
-## Decisions already made
-
-- **Agent loop**: hand-written `while` loop first (done, frozen). A
-  LangGraph rebuild replaces it as the active implementation — see
-  `docs/adr/0001-hand-written-loop-before-langgraph.md`.
-- **Data**: portfolio project — fake catalog, fake client messages only.
-  Never put a real client's data through the Gemini key (free tier: Google
-  can use it).
-
-These aren't open questions — check with Amine before proposing a
-different stack or approach.
+The rate limit and confidence check (guardrails) are new. Every reply
+writes a `Quote` row, whether it sent or was held; there's no
+staff-facing way to review a held one yet (phase 5, once the dashboard
+exists).
