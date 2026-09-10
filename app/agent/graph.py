@@ -1,5 +1,6 @@
 import logging
 import operator
+import re
 from typing import Annotated, TypedDict
 
 from google.genai import types
@@ -20,6 +21,22 @@ from app.schemas.pricing import PriceBreakdown
 logger = logging.getLogger(__name__)
 
 MAX_TURNS = 8
+
+_CONFIDENCE_RE = re.compile(r"\n?CONFIDENCE:\s*(\d{1,3})\s*$")
+
+
+def _extract_confidence(text: str) -> tuple[str, int | None]:
+    """Pulls the trailing "CONFIDENCE: <0-100>" line the system prompt asks
+    for off the agent's reply. Missing or out-of-range → (text, None) —
+    callers treat that as "not confident", never as "somehow certain"."""
+    match = _CONFIDENCE_RE.search(text)
+    if not match:
+        return text, None
+    value = int(match.group(1))
+    clean = _CONFIDENCE_RE.sub("", text).rstrip()
+    if not (0 <= value <= 100):
+        return clean, None
+    return clean, value
 
 
 class AgentState(TypedDict):
@@ -114,5 +131,6 @@ async def run_agent(session: AsyncSession, history: list[types.Content]) -> Agen
 
     lines = final_state["lines"]
     status = "quote_ready" if lines else "needs_info"
-    message_text = final_state["history"][-1].parts[0].text
-    return AgentReply(status=status, message=message_text, lines=lines)
+    raw_text = final_state["history"][-1].parts[0].text
+    message_text, confidence = _extract_confidence(raw_text)
+    return AgentReply(status=status, message=message_text, lines=lines, confidence=confidence)
