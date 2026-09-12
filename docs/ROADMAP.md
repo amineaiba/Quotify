@@ -15,6 +15,37 @@ gets its own brainstorming session before it's built; see
       frozen, not extended further)
 - [x] Multi-turn conversation state for the agent (depends on the software
       track's conversations table)
+- [x] Self-reported confidence score on replies (Guardrails phase)
+
+Next, ordered by importance — each tier assumes the one above it exists.
+Evals grow alongside Tier 1, not after it: Tier 1 + evals is what makes
+the agent solid; Tiers 2-4 are scope, not solidity.
+
+1. [ ] **Tier 1 — real agent, not just Q&A.** Build with evals from day one.
+   1. [ ] Order completion — a confirmed quote becomes a real order record,
+      not just a reply
+   2. [ ] Multi-item quotes — several catalog items in one message (the
+      tool-call loop already supports this structurally; untested)
+   3. [ ] Client memory across conversations — recall a returning client's
+      past orders
+   4. [ ] Proactive follow-up — nudge a client who went quiet after a quote
+2. [ ] **Tier 2 — expands understanding**
+   1. [ ] Images as input — client sends a photo, agent reads it
+   2. [ ] Voice messages — WhatsApp voice notes, transcribed
+   3. [ ] Vague requests → recommendations, beyond exact-match search
+3. [ ] **Tier 3 — broadens scope**
+   1. [ ] Business FAQ answers (hours, delivery, payment methods)
+   2. [ ] "Check my earlier quote" lookup — uses the `Quote` table
+4. [ ] **Tier 4 — architecture**, only once Tier 2/3 exist as real separate
+   domains. `search_catalog` + `calc_price` stay in one agent forever —
+   they're one job, not two.
+   1. [ ] Multi-agent split — router node + specialist agents (quoting /
+      FAQ / recommend)
+
+Parallel, alongside Tier 1, not after it: LLM-as-judge confidence
+(replaces self-reported), a bigger eval set (edge cases, not just
+recall@k), structured output instead of regex-parsed confidence, capped
+conversation history.
 
 ## Software track
 
@@ -45,18 +76,23 @@ Ordered by dependency — each phase only needs what came before it.
       before save+send; always writes a `Quote` row either way
 5. [ ] **Frontend dashboard** — React (Vite + TS + Tailwind), `frontend/`
    folder, npm, runs locally not in Docker. Sub-phases, in order:
-   1. [ ] Scaffold — Vite/React/TS/Tailwind, API client, routing skeleton,
+   1. [x] Scaffold — Vite/React/TS/Tailwind, API client, routing skeleton,
       CORS added to `app/main.py`
-   2. [ ] Landing page — static, no backend dependency
-   3. [ ] Auth — login/signup wired to real endpoints
-   4. [ ] Catalog — table + add/edit/delete, wired to real CRUD endpoints
-   5. [ ] Conversations/inbox + thread view, wired to real data (no pricing-
-      reasoning panel or PDF download yet — not built on the backend)
-   6. [ ] Review endpoints (backend) — `GET /quotes`, `approve`, `reject`.
+   2. [x] Landing page — static, no backend dependency
+   3. [x] Auth — login/signup wired to real endpoints
+   4. [x] Catalog — table + add/edit/delete, wired to real CRUD endpoints
+   5. [x] Conversations/inbox backend — `GET /api/v1/conversations` (list,
+      `?status=` filter) and `GET /api/v1/conversations/{id}` (thread +
+      latest quote). `Conversation.last_message_at` added for inbox
+      ordering.
+   6. [ ] Conversations/inbox + thread view (frontend) — wired to the
+      endpoints above (no pricing-reasoning panel or PDF download yet —
+      not built on the backend)
+   7. [ ] Review endpoints (backend) — `GET /quotes`, `approve`, `reject`.
       Blocked on `Quote` model (Guardrails phase)
-   7. [ ] Review queue + quote history screen — wired to the endpoints
+   8. [ ] Review queue + quote history screen — wired to the endpoints
       above
-   8. [ ] **"Connect WhatsApp" via Meta's Embedded Signup** (business owner
+   9. [ ] **"Connect WhatsApp" via Meta's Embedded Signup** (business owner
       logs into their own Facebook Business account, picks their number,
       Meta hands us `phone_number_id` + token automatically — replaces
       today's manual DB update)
