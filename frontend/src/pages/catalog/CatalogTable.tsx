@@ -1,10 +1,7 @@
 import { Badge } from "../../components/Badge";
 import { Button } from "../../components/Button";
 import type { CatalogItem } from "../../lib/catalog";
-
-function formatPrice(amount: number) {
-  return `${amount.toLocaleString("fr-FR")} DA`;
-}
+import { formatPrice } from "../../lib/format";
 
 /** Turns raw `min_qty` breakpoints into readable ranges: "1–9", "10+". */
 function tierRanges(item: CatalogItem) {

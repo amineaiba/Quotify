@@ -26,8 +26,9 @@ the agent solid; Tiers 2-4 are scope, not solidity.
       not just a reply
    2. [ ] Multi-item quotes — several catalog items in one message (the
       tool-call loop already supports this structurally; untested)
-   3. [ ] Client memory across conversations — recall a returning client's
-      past orders
+   3. [ ] Client memory — a structured lookup of a client's past orders
+      (the `Quote` table, not raw chat text — survives capped/summarized
+      history later)
    4. [ ] Proactive follow-up — nudge a client who went quiet after a quote
 2. [ ] **Tier 2 — expands understanding**
    1. [ ] Images as input — client sends a photo, agent reads it
@@ -85,7 +86,7 @@ Ordered by dependency — each phase only needs what came before it.
       `?status=` filter) and `GET /api/v1/conversations/{id}` (thread +
       latest quote). `Conversation.last_message_at` added for inbox
       ordering.
-   6. [ ] Conversations/inbox + thread view (frontend) — wired to the
+   6. [x] Conversations/inbox + thread view (frontend) — wired to the
       endpoints above (no pricing-reasoning panel or PDF download yet —
       not built on the backend)
    7. [ ] Review endpoints (backend) — `GET /quotes`, `approve`, `reject`.
@@ -99,7 +100,15 @@ Ordered by dependency — each phase only needs what came before it.
 6. [ ] **Hardening** — background jobs/retries for webhook delivery and
    failed sends, logging, error tracking, basic metrics, email
    verification + password reset (needs real email infra — skipped while
-   signups are fake data only)
+   signups are fake data only). The same background-job infra also runs
+   Tier 1's proactive follow-up nudges (AI track) — one mechanism, not two.
+7. [ ] **Order completion** — `Order` model + endpoints; a confirmed quote
+   becomes a real order record. Needed by AI track Tier 1.
+8. [ ] **Media messages** — webhook handles image and voice messages (not
+   just text): download media, pass to the agent, transcribe voice notes.
+   Needed by AI track Tier 2.
+9. [ ] **Business profile content** — small model/fields per business for
+   FAQ info (hours, delivery, payment methods). Needed by AI track Tier 3.
 
 Update this file's checkboxes as phases ship. Add new phases as they come
 up; don't pre-plan past what's reasonably foreseeable.

@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Catalog } from "./pages/catalog/Catalog";
+import { Conversations } from "./pages/conversations/Conversations";
+import { Thread } from "./pages/conversations/Thread";
 import { Landing } from "./pages/landing/Landing";
 import { Login } from "./pages/login/Login";
 import { Placeholder } from "./pages/Placeholder";
@@ -20,7 +22,19 @@ function App() {
       />
       <Route
         path="/inbox"
-        element={<Placeholder title="Conversations" phase="Inbox — phase 5" />}
+        element={
+          <ProtectedRoute>
+            <Conversations theme={theme} onToggleTheme={toggleTheme} />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/inbox/:id"
+        element={
+          <ProtectedRoute>
+            <Thread theme={theme} onToggleTheme={toggleTheme} />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="/catalog"
