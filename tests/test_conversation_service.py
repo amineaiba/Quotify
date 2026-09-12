@@ -73,3 +73,17 @@ async def test_get_conversation_history_returns_messages_in_order(session):
     history = await get_conversation_history(session, conversation.id)
 
     assert [m.content for m in history] == ["salut", "bonjour"]
+
+
+async def test_save_message_bumps_conversation_last_message_at(session):
+    business = await make_business(session)
+    client = await get_or_create_client(session, business.id, "+213555000000")
+    conversation = await get_or_create_conversation(
+        session, business.id, client.id, Channel.whatsapp
+    )
+    assert conversation.last_message_at is None
+
+    await save_message(session, conversation.id, Sender.client, "salut")
+
+    await session.refresh(conversation)
+    assert conversation.last_message_at is not None

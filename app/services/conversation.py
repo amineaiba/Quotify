@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.business import Business, Client
@@ -89,5 +89,14 @@ async def save_message(
         whatsapp_message_id=whatsapp_message_id,
     )
     session.add(message)
+    # Keeps the inbox list's sort order cheap to read (no per-row subquery).
+    # synchronize_session=False: nothing in this function holds a loaded
+    # Conversation to keep in sync, and it avoids an extra SELECT.
+    await session.execute(
+        update(Conversation)
+        .where(Conversation.id == conversation_id)
+        .values(last_message_at=func.now())
+        .execution_options(synchronize_session=False)
+    )
     await session.commit()
     return message
