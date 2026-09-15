@@ -7,7 +7,7 @@ from sqlalchemy.orm import aliased
 
 from app.models.business import Business, Client
 from app.models.conversation import Channel, Conversation, Message, Sender
-from app.models.quote import Quote
+from app.models.quote import Quote, QuoteStatus
 
 
 async def get_business_by_whatsapp_phone_number_id(
@@ -116,13 +116,13 @@ async def get_conversation_for_business(
     return result.scalar_one_or_none()
 
 
-async def get_latest_quote(session: AsyncSession, conversation_id: uuid.UUID) -> Quote | None:
-    stmt = (
-        select(Quote)
-        .where(Quote.conversation_id == conversation_id)
-        .order_by(Quote.created_at.desc(), Quote.id.desc())
-        .limit(1)
-    )
+async def get_latest_quote(
+    session: AsyncSession, conversation_id: uuid.UUID, status: QuoteStatus | None = None
+) -> Quote | None:
+    stmt = select(Quote).where(Quote.conversation_id == conversation_id)
+    if status is not None:
+        stmt = stmt.where(Quote.status == status)
+    stmt = stmt.order_by(Quote.created_at.desc(), Quote.id.desc()).limit(1)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
 
