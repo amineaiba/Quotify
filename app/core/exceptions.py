@@ -17,3 +17,11 @@ class AgentTurnLimitExceeded(Exception):
 
 class InvalidRefreshToken(Exception):
     pass
+
+
+class NoConfirmableQuote(Exception):
+    pass
+
+
+class OrderAlreadyExists(Exception):
+    pass

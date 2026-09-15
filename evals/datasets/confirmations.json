@@ -1,0 +1,12 @@
+[
+  {"confirm_text": "oui c'est bon, vas-y", "should_confirm": true},
+  {"confirm_text": "ok va y", "should_confirm": true},
+  {"confirm_text": "mashi mushkil, nchrio", "should_confirm": true},
+  {"confirm_text": "d'accord, on part sur ça", "should_confirm": true},
+  {"confirm_text": "wallah zeyna, confirmé", "should_confirm": true},
+  {"confirm_text": "ok", "should_confirm": true},
+  {"confirm_text": "ok mais chhal pour 1000 pièces?", "should_confirm": false},
+  {"confirm_text": "non merci, c'est trop cher", "should_confirm": false},
+  {"confirm_text": "et vous avez des cartes de visite aussi?", "should_confirm": false},
+  {"confirm_text": "attendez je réfléchis", "should_confirm": false}
+]

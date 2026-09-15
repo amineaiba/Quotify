@@ -1,5 +1,6 @@
 import pytest
 from google.genai import types
+from sqlalchemy import select
 
 from app.agent.graph import (
     MAX_TURNS,
@@ -12,12 +13,18 @@ from app.agent.graph import (
     user_message,
 )
 from app.core.exceptions import AgentTurnLimitExceeded
-from app.models.conversation import Message, Sender
+from app.models.conversation import Channel, Message, Sender
+from app.models.order import Order
+from app.models.quote import QuoteStatus
+from app.schemas.pricing import PriceBreakdown
+from app.services.conversation import get_or_create_client, get_or_create_conversation
+from app.services.quotes import save_quote
 from tests.conftest import (
     FLYER_ID,
     GraphFakeClient,
     graph_text_content,
     graph_tool_call_content,
+    make_business,
     seed_flyer,
 )
 
@@ -175,6 +182,49 @@ async def test_run_agent_confidence_none_when_agent_omits_it(session, monkeypatc
     reply = await run_agent(session, [user_message("svp le prix")])
 
     assert reply.confidence is None
+
+
+async def test_run_agent_confirm_order_creates_order_row(session, monkeypatch):
+    business = await make_business(session)
+    wa_client = await get_or_create_client(session, business.id, "+213555000000")
+    conversation = await get_or_create_conversation(
+        session, business.id, wa_client.id, Channel.whatsapp
+    )
+    line = PriceBreakdown(
+        item_id=FLYER_ID, name="Flyer A5", unit="flyer",
+        quantity=500, unit_price=19, applied_min_qty=500, total=9500,
+    )
+    await save_quote(session, conversation.id, "9500 DA", 95, [line], QuoteStatus.auto_sent)
+
+    responses = [
+        graph_tool_call_content("confirm_order", {}),
+        graph_text_content("Votre commande est confirmée."),
+    ]
+    client_double = GraphFakeClient(responses)
+    monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
+
+    reply = await run_agent(
+        session, [user_message("oui c'est bon")], conversation_id=conversation.id
+    )
+
+    assert reply.message == "Votre commande est confirmée."
+    result = await session.execute(select(Order).where(Order.conversation_id == conversation.id))
+    assert result.scalar_one_or_none() is not None
+
+
+async def test_run_agent_confirm_order_without_conversation_id_returns_error_gracefully(
+    session, monkeypatch
+):
+    responses = [
+        graph_tool_call_content("confirm_order", {}),
+        graph_text_content("Je n'ai pas de devis à confirmer."),
+    ]
+    client_double = GraphFakeClient(responses)
+    monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
+
+    reply = await run_agent(session, [user_message("oui c'est bon")])
+
+    assert reply.message == "Je n'ai pas de devis à confirmer."
 
 
 # --- messages_to_history ---------------------------------------------------

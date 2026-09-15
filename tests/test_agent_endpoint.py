@@ -87,7 +87,7 @@ async def test_messages_with_conversation_id_saves_turns_and_uses_history(
 
     seen_history = {}
 
-    async def fake_run_agent(session, history):
+    async def fake_run_agent(session, history, conversation_id=None):
         seen_history["value"] = history
         return AgentReply(status="needs_info", message="quelle quantité ?", lines=[])
 
@@ -120,7 +120,7 @@ async def test_messages_second_turn_includes_first_in_history(client, session, m
 
     seen_history = {}
 
-    async def fake_run_agent(session, history):
+    async def fake_run_agent(session, history, conversation_id=None):
         seen_history["value"] = history
         return AgentReply(status="needs_info", message="ok", lines=[])
 
