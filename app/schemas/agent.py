@@ -9,6 +9,10 @@ from app.schemas.pricing import PriceBreakdown
 class AgentRequest(BaseModel):
     message: str = Field(min_length=1)
     conversation_id: uuid.UUID | None = None
+    # Only used when conversation_id is absent — this endpoint has no auth
+    # (dev/testing only, see CLAUDE.local.md), so with a conversation the
+    # business comes from that instead.
+    business_id: uuid.UUID | None = None
 
 
 class AgentReply(BaseModel):

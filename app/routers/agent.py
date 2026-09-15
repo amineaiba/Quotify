@@ -17,18 +17,23 @@ async def messages(
     session: AsyncSession = Depends(get_session),
 ) -> AgentReply:
     conversation = None
+    business_id = body.business_id
     if body.conversation_id is None:
         history = [user_message(body.message)]
     else:
         conversation = await get_conversation_by_id(session, body.conversation_id)
         if conversation is None:
             raise HTTPException(status_code=404, detail="conversation not found")
+        business_id = conversation.business_id
         await save_message(session, conversation.id, Sender.client, body.message)
         history = messages_to_history(await get_conversation_history(session, conversation.id))
 
     try:
         reply = await run_agent(
-            session, history, conversation_id=conversation.id if conversation else None
+            session,
+            history,
+            conversation_id=conversation.id if conversation else None,
+            business_id=business_id,
         )
     except AgentTurnLimitExceeded as err:
         raise HTTPException(status_code=503, detail="agent did not finish") from err

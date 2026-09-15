@@ -4,22 +4,26 @@ from app.agent.tools import dispatch
 from app.models.business import Business, Client
 from app.models.conversation import Channel, Conversation
 from app.models.quote import Quote, QuoteStatus
-from tests.conftest import FLYER_ID, seed_flyer
+from tests.conftest import FLYER_ID, make_business, seed_flyer
 
 
 async def test_dispatch_calc_price_success(session):
-    await seed_flyer(session)
+    business = await seed_flyer(session)
 
-    result = await dispatch(session, "calc_price", {"item_id": str(FLYER_ID), "quantity": 500})
+    result = await dispatch(
+        session, "calc_price", {"item_id": str(FLYER_ID), "quantity": 500}, business_id=business.id
+    )
 
     assert result["total"] == 9500
     assert result["unit_price"] == 19
 
 
 async def test_dispatch_calc_price_below_minimum_returns_error(session):
-    await seed_flyer(session)
+    business = await seed_flyer(session)
 
-    result = await dispatch(session, "calc_price", {"item_id": str(FLYER_ID), "quantity": 50})
+    result = await dispatch(
+        session, "calc_price", {"item_id": str(FLYER_ID), "quantity": 50}, business_id=business.id
+    )
 
     assert result == {"error": "BelowMinimumQuantity", "min_qty": 100}
 
@@ -30,6 +34,20 @@ async def test_dispatch_calc_price_unknown_item_returns_error(session):
     result = await dispatch(session, "calc_price", {"item_id": unknown_id, "quantity": 500})
 
     assert result == {"error": "ItemNotFound", "item_id": unknown_id}
+
+
+async def test_dispatch_calc_price_other_business_item_returns_error(session):
+    await seed_flyer(session)
+    stranger = await make_business(session, email="stranger@x.com", api_key="ks")
+
+    result = await dispatch(
+        session,
+        "calc_price",
+        {"item_id": str(FLYER_ID), "quantity": 500},
+        business_id=stranger.id,
+    )
+
+    assert result == {"error": "ItemNotFound", "item_id": str(FLYER_ID)}
 
 
 async def test_dispatch_unknown_tool_returns_error(session):

@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 MAX_TURNS = 8
 
 
-async def run_agent(session: AsyncSession, message: str) -> AgentReply:
+async def run_agent(
+    session: AsyncSession, message: str, business_id=None
+) -> AgentReply:
     history = [types.Content(role="user", parts=[types.Part(text=message)])]
     lines: list[PriceBreakdown] = []
 
@@ -38,7 +40,7 @@ async def run_agent(session: AsyncSession, message: str) -> AgentReply:
 
         for call in response.function_calls:
             logger.debug("turn %d: calling %s(%s)", turn, call.name, call.args)
-            result = await dispatch(session, call.name, call.args)
+            result = await dispatch(session, call.name, call.args, business_id=business_id)
             logger.debug("turn %d: %s returned %s", turn, call.name, result)
             if call.name == "calc_price" and "error" not in result:
                 lines.append(PriceBreakdown(**result))

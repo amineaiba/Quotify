@@ -9,13 +9,17 @@ from app.models.catalog import CatalogItem, CatalogItemTier
 from app.schemas.catalog import CatalogItemWrite
 
 
-async def search_catalog(session: AsyncSession, message: str, k: int = 3) -> list[CatalogItem]:
-    """Top k catalog items closest in meaning to `message`, best match first."""
+async def search_catalog(
+    session: AsyncSession, business_id: uuid.UUID, message: str, k: int = 3
+) -> list[CatalogItem]:
+    """Top k catalog items closest in meaning to `message`, best match first —
+    scoped to one business's catalog, never another's."""
     [query_vector] = embed([message], "RETRIEVAL_QUERY")
 
     # cosine_distance: smaller = closer. DESC here would return the worst matches.
     stmt = (
         select(CatalogItem)
+        .where(CatalogItem.business_id == business_id)
         .order_by(CatalogItem.embedding.cosine_distance(query_vector))
         .limit(k)
     )

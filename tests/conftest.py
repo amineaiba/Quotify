@@ -187,7 +187,7 @@ async def register_and_login(client: AsyncClient, email: str, name: str = "Test 
 FLYER_ID = uuid.UUID("11111111-1111-1111-1111-111111111111")
 
 
-async def seed_flyer(session: AsyncSession) -> None:
+async def seed_flyer(session: AsyncSession) -> Business:
     business = await make_business(session)
     session.add(
         CatalogItem(
@@ -203,3 +203,4 @@ async def seed_flyer(session: AsyncSession) -> None:
         )
     )
     await session.commit()
+    return business

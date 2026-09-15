@@ -21,7 +21,7 @@ def test_agent_reply_rejects_unknown_status():
 
 
 async def test_run_agent_prices_item_and_returns_quote_ready(session, monkeypatch):
-    await seed_flyer(session)
+    business = await seed_flyer(session)
     responses = [
         FakeResponse(
             function_calls=[
@@ -33,7 +33,7 @@ async def test_run_agent_prices_item_and_returns_quote_ready(session, monkeypatc
     client = FakeClient(responses)
     monkeypatch.setattr("app.agent.loop.get_client", lambda: client)
 
-    reply = await run_agent(session, "500 flyers A5 recto verso, chhal?")
+    reply = await run_agent(session, "500 flyers A5 recto verso, chhal?", business_id=business.id)
 
     assert reply.status == "quote_ready"
     assert reply.lines[0].total == 9500
@@ -53,7 +53,7 @@ async def test_run_agent_no_tool_calls_returns_needs_info(session, monkeypatch):
 
 
 async def test_run_agent_below_minimum_continues_without_crashing(session, monkeypatch):
-    await seed_flyer(session)
+    business = await seed_flyer(session)
     responses = [
         FakeResponse(
             function_calls=[
@@ -65,7 +65,7 @@ async def test_run_agent_below_minimum_continues_without_crashing(session, monke
     client = FakeClient(responses)
     monkeypatch.setattr("app.agent.loop.get_client", lambda: client)
 
-    reply = await run_agent(session, "50 flyers A5 recto verso")
+    reply = await run_agent(session, "50 flyers A5 recto verso", business_id=business.id)
 
     assert reply.status == "needs_info"
     assert reply.lines == []
@@ -73,7 +73,7 @@ async def test_run_agent_below_minimum_continues_without_crashing(session, monke
 
 
 async def test_run_agent_raises_after_max_turns(session, monkeypatch):
-    await seed_flyer(session)
+    business = await seed_flyer(session)
     always_calls = FakeResponse(
         function_calls=[
             FakeCall(name="calc_price", args={"item_id": str(FLYER_ID), "quantity": 500})
@@ -84,4 +84,4 @@ async def test_run_agent_raises_after_max_turns(session, monkeypatch):
     monkeypatch.setattr("app.agent.loop.get_client", lambda: client)
 
     with pytest.raises(AgentTurnLimitExceeded):
-        await run_agent(session, "500 flyers")
+        await run_agent(session, "500 flyers", business_id=business.id)

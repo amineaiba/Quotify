@@ -78,13 +78,14 @@ async def call_model(state: AgentState, config: RunnableConfig) -> dict:
 async def run_tools(state: AgentState, config: RunnableConfig) -> dict:
     session: AsyncSession = config["configurable"]["session"]
     conversation_id = config["configurable"].get("conversation_id")
+    business_id = config["configurable"].get("business_id")
     last_message = state["history"][-1]
     new_history: list[types.Content] = []
     new_lines: list[PriceBreakdown] = []
 
     for call in _function_calls(last_message):
         logger.debug("calling %s(%s)", call.name, call.args)
-        result = await dispatch(session, call.name, call.args, conversation_id)
+        result = await dispatch(session, call.name, call.args, conversation_id, business_id)
         logger.debug("%s returned %s", call.name, result)
         if call.name == "calc_price" and "error" not in result:
             new_lines.append(PriceBreakdown(**result))
@@ -120,13 +121,18 @@ async def run_agent(
     session: AsyncSession,
     history: list[types.Content],
     conversation_id: uuid.UUID | None = None,
+    business_id: uuid.UUID | None = None,
 ) -> AgentReply:
     initial_state: AgentState = {
         "history": history,
         "lines": [],
     }
     config = {
-        "configurable": {"session": session, "conversation_id": conversation_id},
+        "configurable": {
+            "session": session,
+            "conversation_id": conversation_id,
+            "business_id": business_id,
+        },
         # each turn is 2 graph steps (call_model, run_tools), so double MAX_TURNS
         "recursion_limit": MAX_TURNS * 2,
     }

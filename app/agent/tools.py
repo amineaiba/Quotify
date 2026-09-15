@@ -55,11 +55,15 @@ TOOLS = types.Tool(
 
 
 async def dispatch(
-    session: AsyncSession, name: str, args: dict, conversation_id: uuid.UUID | None = None
+    session: AsyncSession,
+    name: str,
+    args: dict,
+    conversation_id: uuid.UUID | None = None,
+    business_id: uuid.UUID | None = None,
 ) -> dict:
     try:
         if name == "search_catalog":
-            items = await search_catalog(session, **args)
+            items = await search_catalog(session, business_id, **args)
             return {
                 "items": [
                     CatalogItemOut.model_validate(i).model_dump(mode="json") for i in items
@@ -71,9 +75,9 @@ async def dispatch(
                 item_id = uuid.UUID(args["item_id"])
             except ValueError:
                 return {"error": "ItemNotFound", "item_id": args["item_id"]}
-            return (await calc_price(session, item_id, args["quantity"])).model_dump(
-                mode="json"
-            )
+            return (
+                await calc_price(session, business_id, item_id, args["quantity"])
+            ).model_dump(mode="json")
         if name == "confirm_order":
             if conversation_id is None:
                 return {"error": "NoConfirmableQuote"}
