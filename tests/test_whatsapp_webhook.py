@@ -1,15 +1,19 @@
 import hashlib
 import hmac
 import json
+import uuid
 
 from sqlalchemy import select
 
 from app.core.config import get_settings
 from app.models.conversation import Channel, Message, Sender
+from app.models.order import Order
 from app.models.quote import HoldReason, Quote, QuoteStatus
 from app.schemas.agent import AgentReply
+from app.schemas.pricing import PriceBreakdown
 from app.services.conversation import get_or_create_client, get_or_create_conversation, save_message
-from tests.conftest import make_business
+from app.services.quotes import save_quote
+from tests.conftest import GraphFakeClient, graph_text_content, graph_tool_call_content, make_business
 
 PHONE_NUMBER_ID = "123456"
 
@@ -83,7 +87,7 @@ async def test_post_saves_message_and_schedules_reply(client, session, monkeypat
 
     sent = {}
 
-    async def fake_run_agent(session, history):
+    async def fake_run_agent(session, history, conversation_id=None):
         return AgentReply(status="quote_ready", message="9500 DA", lines=[], confidence=95)
 
     async def fake_send_message(phone_number_id, to, text):
@@ -118,7 +122,7 @@ async def test_post_saves_message_and_schedules_reply(client, session, monkeypat
 async def test_post_deduplicates_repeated_delivery(client, session, monkeypatch):
     await make_business(session, whatsapp_phone_number_id=PHONE_NUMBER_ID)
 
-    async def fake_run_agent(session, history):
+    async def fake_run_agent(session, history, conversation_id=None):
         return AgentReply(status="quote_ready", message="9500 DA", lines=[], confidence=95)
 
     async def fake_send_message(phone_number_id, to, text):
@@ -144,7 +148,7 @@ async def test_post_survives_concurrent_duplicate(client, session, monkeypatch):
     the second must lose gracefully to the DB's unique constraint, not 500."""
     await make_business(session, whatsapp_phone_number_id=PHONE_NUMBER_ID)
 
-    async def fake_run_agent(session, history):
+    async def fake_run_agent(session, history, conversation_id=None):
         return AgentReply(status="quote_ready", message="9500 DA", lines=[], confidence=95)
 
     async def fake_send_message(phone_number_id, to, text):
@@ -184,7 +188,7 @@ async def test_post_passes_prior_history_to_agent(client, session, monkeypatch):
 
     seen_history = {}
 
-    async def fake_run_agent(session, history):
+    async def fake_run_agent(session, history, conversation_id=None):
         seen_history["value"] = history
         return AgentReply(status="quote_ready", message="9500 DA", lines=[], confidence=95)
 
@@ -223,7 +227,7 @@ async def test_post_unknown_phone_number_id_returns_200_without_saving(client, s
 async def test_post_holds_low_confidence_reply(client, session, monkeypatch):
     await make_business(session, whatsapp_phone_number_id=PHONE_NUMBER_ID)
 
-    async def fake_run_agent(session, history):
+    async def fake_run_agent(session, history, conversation_id=None):
         return AgentReply(status="needs_info", message="ça va, et toi ?", lines=[], confidence=15)
 
     sent = {}
@@ -255,7 +259,7 @@ async def test_post_holds_low_confidence_reply(client, session, monkeypatch):
 async def test_post_holds_rate_limited_reply_even_if_confident(client, session, monkeypatch):
     await make_business(session, whatsapp_phone_number_id=PHONE_NUMBER_ID)
 
-    async def fake_run_agent(session, history):
+    async def fake_run_agent(session, history, conversation_id=None):
         return AgentReply(status="quote_ready", message="9500 DA", lines=[], confidence=95)
 
     async def always_rate_limited(conversation_id):
@@ -280,7 +284,7 @@ async def test_post_holds_rate_limited_reply_even_if_confident(client, session, 
 async def test_post_records_auto_sent_quote(client, session, monkeypatch):
     await make_business(session, whatsapp_phone_number_id=PHONE_NUMBER_ID)
 
-    async def fake_run_agent(session, history):
+    async def fake_run_agent(session, history, conversation_id=None):
         return AgentReply(status="quote_ready", message="9500 DA", lines=[], confidence=95)
 
     async def fake_send_message(phone_number_id, to, text):
@@ -300,3 +304,41 @@ async def test_post_records_auto_sent_quote(client, session, monkeypatch):
     assert len(quotes) == 1
     assert quotes[0].status == QuoteStatus.auto_sent
     assert quotes[0].confidence == 95
+
+
+async def test_post_confirms_order_when_client_confirms(client, session, monkeypatch):
+    business = await make_business(session, whatsapp_phone_number_id=PHONE_NUMBER_ID)
+    wa_client = await get_or_create_client(session, business.id, "213555000000", name="Yacine")
+    conversation = await get_or_create_conversation(
+        session, business.id, wa_client.id, Channel.whatsapp
+    )
+    await save_message(session, conversation.id, Sender.client, "500 flyers, chhal?")
+    await save_message(session, conversation.id, Sender.agent, "9500 DA")
+    line = PriceBreakdown(
+        item_id=uuid.uuid4(), name="Flyer A5", unit="flyer",
+        quantity=500, unit_price=19, applied_min_qty=500, total=9500,
+    )
+    await save_quote(session, conversation.id, "9500 DA", 95, [line], QuoteStatus.auto_sent)
+
+    responses = [
+        graph_tool_call_content("confirm_order", {}),
+        graph_text_content("Votre commande est confirmée."),
+    ]
+    client_double = GraphFakeClient(responses)
+    monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
+
+    async def fake_send_message(phone_number_id, to, text):
+        pass
+
+    monkeypatch.setattr("app.routers.webhooks.whatsapp.send_message", fake_send_message)
+
+    body_bytes = json.dumps(_payload(message_id="wamid.confirm", text="oui c'est bon")).encode()
+    headers = {"X-Hub-Signature-256": _sign(body_bytes), "Content-Type": "application/json"}
+
+    response = await client.post("/api/v1/webhooks/whatsapp", content=body_bytes, headers=headers)
+
+    assert response.status_code == 200
+    result = await session.execute(select(Order))
+    orders = result.scalars().all()
+    assert len(orders) == 1
+    assert orders[0].conversation_id == conversation.id

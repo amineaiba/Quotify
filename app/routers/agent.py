@@ -27,7 +27,9 @@ async def messages(
         history = messages_to_history(await get_conversation_history(session, conversation.id))
 
     try:
-        reply = await run_agent(session, history)
+        reply = await run_agent(
+            session, history, conversation_id=conversation.id if conversation else None
+        )
     except AgentTurnLimitExceeded as err:
         raise HTTPException(status_code=503, detail="agent did not finish") from err
 

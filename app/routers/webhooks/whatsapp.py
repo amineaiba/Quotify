@@ -114,7 +114,7 @@ async def _reply_to_message(
     try:
         async with session_factory() as session:
             history = messages_to_history(await get_conversation_history(session, conversation_id))
-            reply = await run_agent(session, history)
+            reply = await run_agent(session, history, conversation_id=conversation_id)
 
             hold_reason: HoldReason | None = None
             if await is_rate_limited(conversation_id):
