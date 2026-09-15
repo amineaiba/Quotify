@@ -1,0 +1,14 @@
+[
+  {
+    "text": "salam, bghit 500 flyers A5 recto verso o 200 carte de visite, chhal ykhalsouni?",
+    "expected_items": ["Flyer A5 quadri recto-verso", "Carte de visite quadri"]
+  },
+  {
+    "text": "bonjour, je veux 1000 cartes de visite et une banderole pour un mariage, c'est combien tout ça?",
+    "expected_items": ["Carte de visite quadri", "Banderole grand format"]
+  },
+  {
+    "text": "khouya nheb 300 flyers A5 w bghit ossi carte de visite bezaf, chhal?",
+    "expected_items": ["Flyer A5 quadri recto-verso"]
+  }
+]
