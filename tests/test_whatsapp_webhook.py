@@ -13,7 +13,12 @@ from app.schemas.agent import AgentReply
 from app.schemas.pricing import PriceBreakdown
 from app.services.conversation import get_or_create_client, get_or_create_conversation, save_message
 from app.services.quotes import save_quote
-from tests.conftest import GraphFakeClient, graph_text_content, graph_tool_call_content, make_business
+from tests.conftest import (
+    GraphFakeClient,
+    graph_text_content,
+    graph_tool_call_content,
+    make_business,
+)
 
 PHONE_NUMBER_ID = "123456"
 
