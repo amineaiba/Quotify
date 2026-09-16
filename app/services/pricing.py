@@ -16,12 +16,15 @@ def pick_tier(tiers: list[CatalogItemTier], quantity: int) -> CatalogItemTier:
     return max(eligible, key=lambda t: t.min_qty)
 
 
-async def calc_price(session: AsyncSession, item_id: uuid.UUID, quantity: int) -> PriceBreakdown:
-    """Look up item_id, pick the tier for quantity, compose the breakdown."""
+async def calc_price(
+    session: AsyncSession, business_id: uuid.UUID, item_id: uuid.UUID, quantity: int
+) -> PriceBreakdown:
+    """Look up item_id, pick the tier for quantity, compose the breakdown. An item
+    that exists but belongs to another business is treated as not found."""
     item = await session.get(
         CatalogItem, item_id, options=[selectinload(CatalogItem.tiers)]
     )
-    if item is None:
+    if item is None or item.business_id != business_id:
         raise ItemNotFound(item_id=item_id)
 
     tier = pick_tier(item.tiers, quantity)

@@ -24,7 +24,7 @@ async def search(
     body: SearchRequest,
     session: AsyncSession = Depends(get_session),
 ) -> list[CatalogItemOut]:
-    items = await search_catalog(session, body.message, body.k)
+    items = await search_catalog(session, body.business_id, body.message, body.k)
     return [CatalogItemOut.model_validate(item) for item in items]
 
 

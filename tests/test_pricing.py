@@ -63,7 +63,7 @@ async def test_calc_price_happy_path(session):
     session.add(item)
     await session.commit()
 
-    breakdown = await calc_price(session, item_id=item.id, quantity=500)
+    breakdown = await calc_price(session, business_id=business.id, item_id=item.id, quantity=500)
 
     assert breakdown.name == "Flyer A5 quadri recto-verso"
     assert breakdown.unit == "flyer"
@@ -74,9 +74,29 @@ async def test_calc_price_happy_path(session):
 
 
 async def test_calc_price_unknown_item_raises(session):
+    business = await make_business(session)
     unknown_id = uuid.uuid4()
 
     with pytest.raises(ItemNotFound) as exc_info:
-        await calc_price(session, item_id=unknown_id, quantity=500)
+        await calc_price(session, business_id=business.id, item_id=unknown_id, quantity=500)
 
     assert exc_info.value.item_id == unknown_id
+
+
+async def test_calc_price_item_from_another_business_raises(session):
+    owner = await make_business(session, email="owner@x.com", api_key="ko")
+    stranger = await make_business(session, email="stranger@x.com", api_key="ks")
+    item = CatalogItem(
+        business_id=owner.id,
+        name="Flyer A5 quadri recto-verso",
+        unit="flyer",
+        tiers=[CatalogItemTier(min_qty=t.min_qty, unit_price=t.unit_price) for t in FLYER_TIERS],
+        embedding=[0.0] * EMBED_DIM,
+    )
+    session.add(item)
+    await session.commit()
+
+    with pytest.raises(ItemNotFound) as exc_info:
+        await calc_price(session, business_id=stranger.id, item_id=item.id, quantity=500)
+
+    assert exc_info.value.item_id == item.id

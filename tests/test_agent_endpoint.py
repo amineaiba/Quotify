@@ -15,7 +15,7 @@ from tests.conftest import (
 
 
 async def test_messages_prices_item_and_returns_quote_ready(client, session, monkeypatch):
-    await seed_flyer(session)
+    business = await seed_flyer(session)
     responses = [
         graph_tool_call_content("calc_price", {"item_id": str(FLYER_ID), "quantity": 500}),
         graph_text_content("500 flyers A5 recto-verso : 9500 DA."),
@@ -24,7 +24,11 @@ async def test_messages_prices_item_and_returns_quote_ready(client, session, mon
     monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 
     response = await client.post(
-        "/api/v1/agent/messages", json={"message": "500 flyers A5 recto verso, chhal?"}
+        "/api/v1/agent/messages",
+        json={
+            "message": "500 flyers A5 recto verso, chhal?",
+            "business_id": str(business.id),
+        },
     )
 
     assert response.status_code == 200
@@ -87,7 +91,7 @@ async def test_messages_with_conversation_id_saves_turns_and_uses_history(
 
     seen_history = {}
 
-    async def fake_run_agent(session, history, conversation_id=None):
+    async def fake_run_agent(session, history, conversation_id=None, business_id=None):
         seen_history["value"] = history
         return AgentReply(status="needs_info", message="quelle quantité ?", lines=[])
 
@@ -120,7 +124,7 @@ async def test_messages_second_turn_includes_first_in_history(client, session, m
 
     seen_history = {}
 
-    async def fake_run_agent(session, history, conversation_id=None):
+    async def fake_run_agent(session, history, conversation_id=None, business_id=None):
         seen_history["value"] = history
         return AgentReply(status="needs_info", message="ok", lines=[])
 

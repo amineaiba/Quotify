@@ -48,14 +48,14 @@ async def test_call_model_appends_response_to_history(monkeypatch):
 
 
 async def test_run_tools_dispatches_calc_price_and_records_line(session):
-    await seed_flyer(session)
+    business = await seed_flyer(session)
     state: AgentState = {
         "history": [
             graph_tool_call_content("calc_price", {"item_id": str(FLYER_ID), "quantity": 500})
         ],
         "lines": [],
     }
-    config = {"configurable": {"session": session}}
+    config = {"configurable": {"session": session, "business_id": business.id}}
 
     result = await run_tools(state, config)
 
@@ -86,7 +86,7 @@ async def test_run_tools_below_minimum_returns_error_no_line(session):
 
 
 async def test_run_agent_prices_item_and_returns_quote_ready(session, monkeypatch):
-    await seed_flyer(session)
+    business = await seed_flyer(session)
     responses = [
         graph_tool_call_content("calc_price", {"item_id": str(FLYER_ID), "quantity": 500}),
         graph_text_content("500 flyers A5 recto-verso : 9500 DA."),
@@ -94,7 +94,9 @@ async def test_run_agent_prices_item_and_returns_quote_ready(session, monkeypatc
     client_double = GraphFakeClient(responses)
     monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 
-    reply = await run_agent(session, [user_message("500 flyers A5 recto verso, chhal?")])
+    reply = await run_agent(
+        session, [user_message("500 flyers A5 recto verso, chhal?")], business_id=business.id
+    )
 
     assert reply.status == "quote_ready"
     assert reply.lines[0].total == 9500
@@ -114,7 +116,7 @@ async def test_run_agent_no_tool_calls_returns_needs_info(session, monkeypatch):
 
 
 async def test_run_agent_below_minimum_continues_without_crashing(session, monkeypatch):
-    await seed_flyer(session)
+    business = await seed_flyer(session)
     responses = [
         graph_tool_call_content("calc_price", {"item_id": str(FLYER_ID), "quantity": 50}),
         graph_text_content("Le minimum pour cet article est 100."),
@@ -122,7 +124,9 @@ async def test_run_agent_below_minimum_continues_without_crashing(session, monke
     client_double = GraphFakeClient(responses)
     monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 
-    reply = await run_agent(session, [user_message("50 flyers A5 recto verso")])
+    reply = await run_agent(
+        session, [user_message("50 flyers A5 recto verso")], business_id=business.id
+    )
 
     assert reply.status == "needs_info"
     assert reply.lines == []
@@ -130,7 +134,7 @@ async def test_run_agent_below_minimum_continues_without_crashing(session, monke
 
 
 async def test_run_agent_raises_after_max_turns(session, monkeypatch):
-    await seed_flyer(session)
+    business = await seed_flyer(session)
     always_calls = graph_tool_call_content(
         "calc_price", {"item_id": str(FLYER_ID), "quantity": 500}
     )
@@ -139,7 +143,7 @@ async def test_run_agent_raises_after_max_turns(session, monkeypatch):
     monkeypatch.setattr("app.agent.graph.get_client", lambda: client_double)
 
     with pytest.raises(AgentTurnLimitExceeded):
-        await run_agent(session, [user_message("500 flyers")])
+        await run_agent(session, [user_message("500 flyers")], business_id=business.id)
 
 
 # --- _extract_confidence ----------------------------------------------------

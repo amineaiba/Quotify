@@ -92,6 +92,7 @@ async def receive_webhook(
         background_tasks.add_task(
             _reply_to_message,
             conversation_id=conversation.id,
+            business_id=business.id,
             phone_number_id=inbound.phone_number_id,
             to_number=inbound.from_number,
             session_factory=session_factory,
@@ -102,6 +103,7 @@ async def receive_webhook(
 
 async def _reply_to_message(
     conversation_id,
+    business_id,
     phone_number_id: str,
     to_number: str,
     session_factory: async_sessionmaker[AsyncSession],
@@ -114,7 +116,9 @@ async def _reply_to_message(
     try:
         async with session_factory() as session:
             history = messages_to_history(await get_conversation_history(session, conversation_id))
-            reply = await run_agent(session, history, conversation_id=conversation_id)
+            reply = await run_agent(
+                session, history, conversation_id=conversation_id, business_id=business_id
+            )
 
             hold_reason: HoldReason | None = None
             if await is_rate_limited(conversation_id):
