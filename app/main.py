@@ -12,6 +12,7 @@ from app.routers.auth import router as auth_router
 from app.routers.catalog import router as catalog_router
 from app.routers.conversations import router as conversations_router
 from app.routers.orders import router as orders_router
+from app.routers.quotes import router as quotes_router
 from app.routers.webhooks.whatsapp import router as whatsapp_webhook_router
 
 logging.basicConfig(
@@ -34,6 +35,7 @@ app.add_middleware(
 app.include_router(catalog_router, prefix="/api/v1/catalog", tags=["catalog"])
 app.include_router(conversations_router, prefix="/api/v1/conversations", tags=["conversations"])
 app.include_router(orders_router, prefix="/api/v1/orders", tags=["orders"])
+app.include_router(quotes_router, prefix="/api/v1/quotes", tags=["quotes"])
 app.include_router(agent_router, prefix="/api/v1/agent", tags=["agent"])
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(whatsapp_webhook_router, prefix="/api/v1/webhooks/whatsapp", tags=["webhooks"])
