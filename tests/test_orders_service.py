@@ -99,6 +99,16 @@ async def test_confirm_order_raises_when_already_confirmed(session):
         await confirm_order(session, conversation.id)
 
 
+async def test_confirm_order_creates_order_from_approved_quote(session):
+    conversation = await _make_conversation(session)
+    quote = await _add_quote(session, conversation.id, QuoteStatus.approved, _LINES)
+
+    order = await confirm_order(session, conversation.id)
+
+    assert order.quote_id == quote.id
+    assert order.status == OrderStatus.confirmed
+
+
 async def test_confirm_order_targets_latest_auto_sent_quote(session):
     """Documents the known gap: an older quote can't be confirmed once a
     newer one exists in the same conversation — see CLAUDE.local.md."""
