@@ -3,9 +3,10 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { Catalog } from "./pages/catalog/Catalog";
 import { Conversations } from "./pages/conversations/Conversations";
 import { Thread } from "./pages/conversations/Thread";
+import { QuoteHistory } from "./pages/history/QuoteHistory";
 import { Landing } from "./pages/landing/Landing";
 import { Login } from "./pages/login/Login";
-import { Placeholder } from "./pages/Placeholder";
+import { Review } from "./pages/review/Review";
 import { useAuth } from "./lib/AuthContext";
 import { useTheme } from "./lib/useTheme";
 
@@ -46,11 +47,19 @@ function App() {
       />
       <Route
         path="/review"
-        element={<Placeholder title="Review queue" phase="Blocked on Quote model — phase 6" />}
+        element={
+          <ProtectedRoute>
+            <Review theme={theme} onToggleTheme={toggleTheme} />
+          </ProtectedRoute>
+        }
       />
       <Route
         path="/quotes"
-        element={<Placeholder title="Quote history" phase="Blocked on Quote model — phase 6" />}
+        element={
+          <ProtectedRoute>
+            <QuoteHistory theme={theme} onToggleTheme={toggleTheme} />
+          </ProtectedRoute>
+        }
       />
     </Routes>
   );

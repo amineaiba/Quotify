@@ -25,3 +25,7 @@ class NoConfirmableQuote(Exception):
 
 class OrderAlreadyExists(Exception):
     pass
+
+
+class QuoteNotPending(Exception):
+    pass

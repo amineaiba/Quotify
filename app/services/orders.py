@@ -14,7 +14,9 @@ from app.services.conversation import get_latest_quote
 
 async def confirm_order(session: AsyncSession, conversation_id: uuid.UUID) -> Order:
     """Creates an Order from the conversation's latest auto-sent, priced quote."""
-    quote = await get_latest_quote(session, conversation_id, status=QuoteStatus.auto_sent)
+    quote = await get_latest_quote(
+        session, conversation_id, status=(QuoteStatus.auto_sent, QuoteStatus.approved)
+    )
     if quote is None or not quote.lines:
         raise NoConfirmableQuote()
 

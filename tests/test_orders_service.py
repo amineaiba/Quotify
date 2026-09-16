@@ -6,6 +6,7 @@ from app.models.conversation import Channel, Conversation
 from app.models.order import OrderStatus
 from app.models.quote import Quote, QuoteStatus
 from app.services.orders import confirm_order
+from app.services.quotes import approve_quote
 
 _LINES = [
     {
@@ -99,6 +100,16 @@ async def test_confirm_order_raises_when_already_confirmed(session):
         await confirm_order(session, conversation.id)
 
 
+async def test_confirm_order_creates_order_from_approved_quote(session):
+    conversation = await _make_conversation(session)
+    quote = await _add_quote(session, conversation.id, QuoteStatus.approved, _LINES)
+
+    order = await confirm_order(session, conversation.id)
+
+    assert order.quote_id == quote.id
+    assert order.status == OrderStatus.confirmed
+
+
 async def test_confirm_order_targets_latest_auto_sent_quote(session):
     """Documents the known gap: an older quote can't be confirmed once a
     newer one exists in the same conversation — see CLAUDE.local.md."""
@@ -109,3 +120,15 @@ async def test_confirm_order_targets_latest_auto_sent_quote(session):
     order = await confirm_order(session, conversation.id)
 
     assert order.quote_id == newer_quote.id
+
+
+async def test_confirm_order_works_after_quote_is_approved_via_review_queue(session):
+    conversation = await _make_conversation(session)
+    quote = await _add_quote(session, conversation.id, QuoteStatus.pending, _LINES)
+
+    await approve_quote(session, quote, "9500 DA, confirmed by staff")
+
+    order = await confirm_order(session, conversation.id)
+
+    assert order.quote_id == quote.id
+    assert order.status == OrderStatus.confirmed

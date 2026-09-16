@@ -1,4 +1,5 @@
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from sqlalchemy import func, select, update
@@ -117,11 +118,15 @@ async def get_conversation_for_business(
 
 
 async def get_latest_quote(
-    session: AsyncSession, conversation_id: uuid.UUID, status: QuoteStatus | None = None
+    session: AsyncSession,
+    conversation_id: uuid.UUID,
+    status: QuoteStatus | Sequence[QuoteStatus] | None = None,
 ) -> Quote | None:
     stmt = select(Quote).where(Quote.conversation_id == conversation_id)
-    if status is not None:
+    if isinstance(status, QuoteStatus):
         stmt = stmt.where(Quote.status == status)
+    elif status is not None:
+        stmt = stmt.where(Quote.status.in_(status))
     stmt = stmt.order_by(Quote.created_at.desc(), Quote.id.desc()).limit(1)
     result = await session.execute(stmt)
     return result.scalar_one_or_none()
