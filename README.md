@@ -21,6 +21,16 @@ in a review queue and the owner approves or rejects it.
 - **Orders**: when a client confirms a quote, it becomes an order.
 - **Dashboard**: React app with catalog, inbox, review queue and quote history.
 
+## Screenshots
+
+All data is fake.
+
+![Landing page](docs/screenshots/landing.png)
+![Catalog with price tiers](docs/screenshots/catalog.png)
+![Conversations inbox](docs/screenshots/inbox.png)
+![Review queue for held quotes](docs/screenshots/review.png)
+![Quote history](docs/screenshots/history.png)
+
 ## Stack
 
 Python, FastAPI, PostgreSQL + pgvector, SQLAlchemy 2.0 (async) + Alembic, Redis,
