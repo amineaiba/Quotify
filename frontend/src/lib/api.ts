@@ -24,11 +24,14 @@ async function parseErrorDetail(res: Response): Promise<string> {
   try {
     const { detail } = await res.json();
     if (typeof detail === "string") return detail;
-    if (Array.isArray(detail)) return detail.map((e) => e.msg).join(". ");
+    if (Array.isArray(detail)) {
+      const messages = detail.map((e) => e?.msg).filter((m) => typeof m === "string");
+      if (messages.length) return messages.join(". ");
+    }
     if (typeof detail?.reason === "string") return detail.reason;
-    return res.statusText;
+    return res.statusText || `Request failed (${res.status})`;
   } catch {
-    return res.statusText;
+    return res.statusText || `Request failed (${res.status})`;
   }
 }
 

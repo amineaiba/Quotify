@@ -112,6 +112,7 @@ async def test_messages_with_conversation_id_saves_turns_and_uses_history(
 
     async def fake_run_agent(session, history, conversation_id=None, business_id=None):
         seen_history["value"] = history
+        seen_history["business_id"] = business_id
         return AgentReply(status="needs_info", message="quelle quantité ?", lines=[])
 
     monkeypatch.setattr("app.routers.agent.run_agent", fake_run_agent)
@@ -132,6 +133,7 @@ async def test_messages_with_conversation_id_saves_turns_and_uses_history(
         (Sender.agent, "quelle quantité ?"),
     ]
     assert [c.parts[0].text for c in seen_history["value"]] == ["prix des flyers ?"]
+    assert seen_history["business_id"] == business.id
 
 
 async def test_messages_second_turn_includes_first_in_history(client, session, monkeypatch):

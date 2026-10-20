@@ -104,7 +104,7 @@ Left out on purpose. This is a portfolio project.
 
 - **Connect WhatsApp from the dashboard** (Meta Embedded Signup). Needs Meta business verification.
 - **Email verification and password reset.** Needs real email setup.
-- **Background job queue.** A failed reply is retried on send and then logged. It is not queued.
+- **Background job queue.** A failed reply is retried on send and then logged. It is not queued. Its quote stays `auto_sent`, so the dashboard shows it as sent.
 - **Approving a quote** saves it as approved before sending. If the send still fails after retries, the endpoint returns an error and the client gets no message.
 - **`confirm_order` always uses the latest quote.** A client who confirms an older quote after a new one is not handled.
 - **No cancel flow** for orders, although the `cancelled` status exists.
