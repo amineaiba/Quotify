@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { setAccessToken } from "./api";
 import { authApi, type TokenPair } from "./auth";
 
@@ -28,8 +28,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const refreshStarted = useRef(false);
+
   // On load, trade a stored refresh token for a fresh session instead of forcing re-login.
+  // Refresh tokens are one-time use: the ref stops StrictMode (dev) from sending it twice.
   useEffect(() => {
+    if (refreshStarted.current) return;
+    refreshStarted.current = true;
     const stored = localStorage.getItem(REFRESH_TOKEN_KEY);
     if (!stored) {
       setIsLoading(false);

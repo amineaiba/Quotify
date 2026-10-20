@@ -23,8 +23,9 @@ router = APIRouter()
 async def search(
     body: SearchRequest,
     session: AsyncSession = Depends(get_session),
+    business: Business = Depends(current_active_business),
 ) -> list[CatalogItemOut]:
-    items = await search_catalog(session, body.business_id, body.message, body.k)
+    items = await search_catalog(session, business.id, body.message, body.k)
     return [CatalogItemOut.model_validate(item) for item in items]
 
 

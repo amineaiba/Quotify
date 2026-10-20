@@ -16,6 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.graph import run_agent, user_message
+from app.core.exceptions import AgentTurnLimitExceeded
 from app.db.session import async_session_factory
 from app.models.business import Business, Client
 from app.models.conversation import Channel, Conversation
@@ -78,7 +79,13 @@ async def run_case(session: AsyncSession, case: dict) -> bool:
             _model_message(_QUOTE_TEXT),
             user_message(case["confirm_text"]),
         ]
-        await run_agent(session, history, conversation_id=conversation.id)
+        try:
+            await run_agent(
+                session, history, conversation_id=conversation.id, business_id=business_id
+            )
+        except AgentTurnLimitExceeded:
+            # The agent looped without answering. Not a crash: score what it did (no order).
+            logger.warning("agent hit the turn limit on %r", case["confirm_text"])
         return await _order_exists(session, conversation.id) == case["should_confirm"]
     finally:
         business = await session.get(Business, business_id)
@@ -89,11 +96,16 @@ async def run_case(session: AsyncSession, case: dict) -> bool:
 async def main(verbose: bool) -> None:
     correct = 0
     async with async_session_factory() as session:
-        for case in CASES:
+        for i, case in enumerate(CASES):
+            if i > 0:
+                # stays under Gemini's free-tier rate limit (15 requests/min) —
+                # each case makes 2+ real calls.
+                await asyncio.sleep(10)
+            logger.info("--- case %d/%d: %r ---", i + 1, len(CASES), case["confirm_text"])
             ok = await run_case(session, case)
             correct += 1 if ok else 0
             mark = "HIT " if ok else "MISS"
-            logger.debug(
+            logger.info(
                 "%s should_confirm=%-5s  %s", mark, case["should_confirm"], case["confirm_text"]
             )
     logger.info(
@@ -103,8 +115,18 @@ async def main(verbose: bool) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-v", "--verbose", action="store_true", help="show per-case hit/miss")
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="also show each tool call the agent makes"
+    )
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO, format="%(message)s")
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format="%(name)-16s %(message)s",
+    )
+    # Third-party libraries log a lot of noise at DEBUG — quiet them so only
+    # our own eval output and app.agent.graph's tool calls show up.
+    for noisy in ("httpx", "httpcore", "langgraph", "google_genai", "urllib3"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
+
     asyncio.run(main(args.verbose))

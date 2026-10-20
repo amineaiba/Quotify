@@ -114,3 +114,9 @@ async def test_delete_unknown_item_returns_404(client, session):
         "/api/v1/catalog/items/00000000-0000-0000-0000-000000000000", headers=headers
     )
     assert response.status_code == 404
+
+
+async def test_search_requires_auth(client, session):
+    response = await client.post("/api/v1/catalog/search", json={"message": "flyers"})
+
+    assert response.status_code == 401

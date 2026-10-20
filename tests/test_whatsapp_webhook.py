@@ -1,8 +1,10 @@
 import hashlib
 import hmac
 import json
+import logging
 import uuid
 
+import httpx
 from sqlalchemy import select
 
 from app.core.config import get_settings
@@ -122,6 +124,31 @@ async def test_post_saves_message_and_schedules_reply(client, session, monkeypat
     assert messages[1].content == "9500 DA"
 
     assert sent == {"phone_number_id": PHONE_NUMBER_ID, "to": "213555000000", "text": "9500 DA"}
+
+
+async def test_failed_send_is_logged_with_quote_id(client, session, monkeypatch, caplog):
+    await make_business(session, whatsapp_phone_number_id=PHONE_NUMBER_ID)
+
+    async def fake_run_agent(session, history, conversation_id=None, business_id=None):
+        return AgentReply(status="quote_ready", message="9500 DA", lines=[], confidence=95)
+
+    async def failing_send_message(phone_number_id, to, text):
+        raise httpx.ConnectError("meta unreachable")
+
+    monkeypatch.setattr("app.routers.webhooks.whatsapp.run_agent", fake_run_agent)
+    monkeypatch.setattr("app.routers.webhooks.whatsapp.send_message", failing_send_message)
+
+    body_bytes = json.dumps(_payload()).encode()
+    with caplog.at_level(logging.ERROR):
+        response = await client.post(
+            "/api/v1/webhooks/whatsapp",
+            content=body_bytes,
+            headers={"X-Hub-Signature-256": _sign(body_bytes), "Content-Type": "application/json"},
+        )
+
+    assert response.status_code == 200
+    quote = (await session.execute(select(Quote))).scalar_one()
+    assert f"reply not delivered: quote_id={quote.id}" in caplog.text
 
 
 async def test_post_deduplicates_repeated_delivery(client, session, monkeypatch):

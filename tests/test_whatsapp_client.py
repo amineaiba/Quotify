@@ -42,3 +42,57 @@ async def test_send_message_raises_on_error_response(monkeypatch):
 
     with pytest.raises(httpx.HTTPStatusError):
         await whatsapp_client.send_message("123456", "+213555000000", "hi")
+
+
+@pytest.fixture
+def no_sleep(monkeypatch):
+    async def instant(_seconds):
+        pass
+
+    monkeypatch.setattr("app.whatsapp.client.asyncio.sleep", instant)
+
+
+async def test_send_message_retries_server_error_then_succeeds(monkeypatch, no_sleep):
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        if len(calls) < 3:
+            return httpx.Response(503)
+        return httpx.Response(200, json={"messages": [{"id": "wamid.out"}]})
+
+    _patch_transport(monkeypatch, handler)
+
+    await whatsapp_client.send_message("123456", "+213555000000", "hi")
+
+    assert len(calls) == 3
+
+
+async def test_send_message_gives_up_after_max_attempts(monkeypatch, no_sleep):
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(503)
+
+    _patch_transport(monkeypatch, handler)
+
+    with pytest.raises(httpx.HTTPStatusError):
+        await whatsapp_client.send_message("123456", "+213555000000", "hi")
+
+    assert len(calls) == whatsapp_client.SEND_ATTEMPTS
+
+
+async def test_send_message_does_not_retry_client_error(monkeypatch, no_sleep):
+    calls = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(401)
+
+    _patch_transport(monkeypatch, handler)
+
+    with pytest.raises(httpx.HTTPStatusError):
+        await whatsapp_client.send_message("123456", "+213555000000", "hi")
+
+    assert len(calls) == 1

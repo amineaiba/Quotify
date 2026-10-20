@@ -83,3 +83,6 @@ a different one.
   plans that came out of each brainstorming session. This overrides the
   `docs/superpowers/specs/` and `docs/superpowers/plans/` defaults some
   skills use — always write here instead.
+- `graphify-out/GRAPH_REPORT.md` — a map of the codebase. Read this first
+  each session instead of scanning the whole codebase. Only read actual
+  source files for what this report doesn't cover.

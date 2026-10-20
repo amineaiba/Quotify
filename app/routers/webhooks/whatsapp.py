@@ -1,5 +1,6 @@
 import logging
 
+import httpx
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request, Response
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -110,8 +111,8 @@ async def _reply_to_message(
 ) -> None:
     """Runs after the HTTP response is sent — opens its own DB session,
     since the request's session is closed by then. Any failure here is
-    logged, never re-raised: no retry this phase (see Hardening in the
-    roadmap), but a crash here must not take down the process.
+    logged, never re-raised: a crash here must not take down the process.
+    A failed send is retried inside send_message, then logged with the quote id.
     """
     try:
         async with session_factory() as session:
@@ -127,7 +128,7 @@ async def _reply_to_message(
                 hold_reason = HoldReason.low_confidence
 
             status = QuoteStatus.pending if hold_reason else QuoteStatus.auto_sent
-            await save_quote(
+            quote = await save_quote(
                 session,
                 conversation_id,
                 reply.message,
@@ -139,6 +140,13 @@ async def _reply_to_message(
 
             if status == QuoteStatus.auto_sent:
                 await save_message(session, conversation_id, Sender.agent, reply.message)
-                await send_message(phone_number_id, to_number, reply.message)
+                try:
+                    await send_message(phone_number_id, to_number, reply.message)
+                except httpx.HTTPError:
+                    logger.exception(
+                        "reply not delivered: quote_id=%s conversation_id=%s",
+                        quote.id,
+                        conversation_id,
+                    )
     except Exception:
         logger.exception("failed to reply to conversation_id=%s", conversation_id)

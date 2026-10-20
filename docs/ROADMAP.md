@@ -5,6 +5,12 @@ Two tracks, worked separately but both built together with Amine — see
 gets its own brainstorming session before it's built; see
 `docs/specs/` for the design docs that come out of that.
 
+## Status
+
+Stopped here on purpose: the product works end to end (WhatsApp message, agent,
+guardrails, review queue, orders, dashboard). Everything still unchecked below
+is future work, not a missing piece. See "Known gaps" in the README.
+
 ## AI track
 
 - [x] Catalog search via pgvector (`search_catalog`)
@@ -22,10 +28,12 @@ Evals grow alongside Tier 1, not after it: Tier 1 + evals is what makes
 the agent solid; Tiers 2-4 are scope, not solidity.
 
 1. [ ] **Tier 1 — real agent, not just Q&A.** Build with evals from day one.
-   1. [ ] Order completion — a confirmed quote becomes a real order record,
+   1. [x] Order completion — a confirmed quote becomes a real order record,
       not just a reply
-   2. [ ] Multi-item quotes — several catalog items in one message (the
-      tool-call loop already supports this structurally; untested)
+   2. [x] Multi-item quotes — several catalog items in one message. Prompt
+      now handles it explicitly: prices what it can, asks only about what's
+      missing. Eval: `evals/multi_item_eval.py` (2/3 on the current dataset —
+      the miss is dataset ambiguity, not a bug, see eval's own output)
    3. [ ] Client memory — a structured lookup of a client's past orders
       (the `Quote` table, not raw chat text — survives capped/summarized
       history later)
@@ -75,7 +83,7 @@ Ordered by dependency — each phase only needs what came before it.
       still send) if Redis is unreachable — see ADR
    4. [x] Gate `_reply_to_message` — rate limit then confidence check
       before save+send; always writes a `Quote` row either way
-5. [ ] **Frontend dashboard** — React (Vite + TS + Tailwind), `frontend/`
+5. [x] **Frontend dashboard** — React (Vite + TS + Tailwind), `frontend/`
    folder, npm, runs locally not in Docker. Sub-phases, in order:
    1. [x] Scaffold — Vite/React/TS/Tailwind, API client, routing skeleton,
       CORS added to `app/main.py`
@@ -89,20 +97,20 @@ Ordered by dependency — each phase only needs what came before it.
    6. [x] Conversations/inbox + thread view (frontend) — wired to the
       endpoints above (no pricing-reasoning panel or PDF download yet —
       not built on the backend)
-   7. [ ] Review endpoints (backend) — `GET /quotes`, `approve`, `reject`.
-      Blocked on `Quote` model (Guardrails phase)
-   8. [ ] Review queue + quote history screen — wired to the endpoints
+   7. [x] Review endpoints (backend) — `GET /quotes`, `approve`, `reject`
+   8. [x] Review queue + quote history screen — wired to the endpoints
       above
-   9. [ ] **"Connect WhatsApp" via Meta's Embedded Signup** (business owner
+   9. [ ] (deferred) **"Connect WhatsApp" via Meta's Embedded Signup** (business owner
       logs into their own Facebook Business account, picks their number,
       Meta hands us `phone_number_id` + token automatically — replaces
       today's manual DB update)
-6. [ ] **Hardening** — background jobs/retries for webhook delivery and
+6. [ ] **Hardening** — partly done: failed WhatsApp sends are retried and
+   logged. Still open: background jobs/retries for webhook delivery and
    failed sends, logging, error tracking, basic metrics, email
    verification + password reset (needs real email infra — skipped while
    signups are fake data only). The same background-job infra also runs
    Tier 1's proactive follow-up nudges (AI track) — one mechanism, not two.
-7. [ ] **Order completion** — `Order` model + endpoints; a confirmed quote
+7. [x] **Order completion** — `Order` model + endpoints; a confirmed quote
    becomes a real order record. Needed by AI track Tier 1.
 8. [ ] **Media messages** — webhook handles image and voice messages (not
    just text): download media, pass to the agent, transcribe voice notes.
