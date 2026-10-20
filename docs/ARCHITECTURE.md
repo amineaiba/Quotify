@@ -39,7 +39,8 @@ idea as `app/llm/` — Meta/WhatsApp's payload shapes stay out of
 Instagram get their own files and paths later without conflict.
 
 `evals/` sits next to `tests/`, not inside it — evals score retrieval
-quality (`recall@k`) and cost real API calls, so they run by hand.
+quality (`recall@k`) and agent behavior (e.g. `confirm_order` accuracy);
+both cost real API calls, so they run by hand.
 
 ## Data model
 
@@ -49,9 +50,12 @@ erDiagram
     BUSINESS ||--o{ REFRESH_TOKEN : has
     BUSINESS ||--o{ CONVERSATION : has
     BUSINESS ||--o{ CATALOG_ITEM : has
+    BUSINESS ||--o{ ORDER : has
     CLIENT ||--o{ CONVERSATION : has
     CONVERSATION ||--o{ MESSAGE : has
     CONVERSATION ||--o{ QUOTE : has
+    CONVERSATION ||--o{ ORDER : has
+    QUOTE ||--o| ORDER : confirmed_as
     CATALOG_ITEM ||--o{ CATALOG_ITEM_TIER : has
 
     BUSINESS {
@@ -113,19 +117,30 @@ erDiagram
         uuid id PK
         uuid conversation_id FK
         string draft_message
-        string final_message "nullable — set if staff edits before approving (phase 5)"
+        string final_message "nullable — set when staff approves (the text that was sent)"
         int confidence "nullable — agent's self-reported 0-100 score"
         string status "pending | approved | rejected | auto_sent"
         string hold_reason "nullable — low_confidence | rate_limited"
         json lines "nullable — price breakdown, if any"
         datetime created_at
-        datetime reviewed_at "nullable — set in phase 5"
+        datetime reviewed_at "nullable — set on approve or reject"
+    }
+    ORDER {
+        uuid id PK
+        uuid business_id FK
+        uuid conversation_id FK
+        uuid quote_id FK "unique — one order per quote"
+        string status "confirmed | cancelled"
+        datetime created_at
     }
 ```
 
 `(business_id, client_id, channel)` is unique on `CONVERSATION` — one
 conversation per client per channel; no separate "closed" state yet. One
 `QUOTE` row is written per agent reply, whether it auto-sent or was held.
+`ORDER.quote_id` is unique and never duplicates the quote's price
+lines — it just points at the quote that got confirmed, which already
+freezes the price at confirmation time.
 
 ## Request flow (current)
 
@@ -138,17 +153,17 @@ sequenceDiagram
     participant T as agent/tools.py (dispatch)
     participant DB as Postgres
 
-    C->>R: POST /api/v1/agent/messages {message, conversation_id?}
+    C->>R: POST /api/v1/agent/messages {message, conversation_id?} (login required)
     alt conversation_id given
         R->>DB: save inbound message, load full conversation history
     end
-    R->>L: run_agent(session, history)
+    R->>L: run_agent(session, history, conversation_id)
     loop until no function calls or MAX_TURNS
         L->>G: generate_content(history)
         G-->>L: text or function_call(s)
-        L->>T: dispatch(name, args)
-        T->>DB: search_catalog / calc_price
-        DB-->>T: rows / tiers
+        L->>T: dispatch(name, args, conversation_id)
+        T->>DB: search_catalog / calc_price / confirm_order
+        DB-->>T: rows / tiers / order
         T-->>L: result (or caught domain error)
     end
     L-->>R: AgentReply(status, message, lines)
@@ -167,6 +182,15 @@ caller's job: `messages_to_history` (`app/agent/graph.py`) converts saved
 before — one message in, one reply out, nothing saved.
 `ItemNotFound` and `BelowMinimumQuantity` are caught inside `dispatch` and
 fed back to Gemini as text instead of crashing the loop.
+
+A third tool, `confirm_order`, turns a client's confirmation into a real
+`Order` row: it looks up the conversation's latest `auto_sent` quote —
+using the `conversation_id` now threaded through `run_agent` →
+`dispatch` — and creates an `Order` pointing at it. No `quote_id`
+argument, so it always targets the *latest* quote; confirming an older
+one after a newer quote exists isn't handled yet (known gap, see
+`CLAUDE.local.md`). `GET /api/v1/orders` and `GET /api/v1/orders/{id}`
+read them back, same business-scoped pattern as `conversations.py`.
 
 ## Request flow — WhatsApp webhook
 
@@ -189,7 +213,7 @@ sequenceDiagram
     R-->>Meta: 200
     R->>BG: schedule reply (own DB session)
     BG->>DB: load full conversation history
-    BG->>L: run_agent(session, history)
+    BG->>L: run_agent(session, history, conversation_id)
     L-->>BG: AgentReply (message, confidence)
     BG->>RL: is_rate_limited(conversation_id)
     RL->>Redis: INCR / EXPIRE
@@ -203,9 +227,9 @@ sequenceDiagram
     BG->>DB: save_quote (status: auto_sent, or pending + hold_reason)
     alt auto_sent (rate limit ok, confidence ≥ threshold)
         BG->>DB: save agent reply as Message
-        BG->>W: send_message(...)
+        BG->>W: send_message(...) (retried on network, 429, 5xx)
     else pending (rate limited, or low/missing confidence)
-        Note over BG: nothing sent — held for staff review (phase 5)
+        Note over BG: nothing sent — held in the review queue
     end
 ```
 
@@ -214,9 +238,12 @@ for it. The background task opens its own DB session
 (`get_session_factory`, overridable in tests); the request's session is
 gone by the time it runs. A failure in the background task is logged, not
 retried — see `docs/specs/2026-09-02-whatsapp-webhook-design.md` for the
-accepted gap and why (Hardening phase closes it).
+accepted gap and why. A failed send is retried up to 3 times inside
+`send_message`, then logged with the quote id.
 
-The rate limit and confidence check (guardrails) are new. Every reply
-writes a `Quote` row, whether it sent or was held; there's no
-staff-facing way to review a held one yet (phase 5, once the dashboard
-exists).
+The rate limit and confidence check are the guardrails. Every reply
+writes a `Quote` row, whether it sent or was held. Held quotes show in the
+dashboard review queue: `GET /api/v1/quotes` lists them, and
+`POST /api/v1/quotes/{id}/approve` or `/reject` settles one (approve sends the
+staff-edited reply to the client). Both agent and catalog-search dev endpoints need login
+and use the caller's business.
