@@ -6,6 +6,9 @@ from pydantic import BaseModel, Field, field_validator
 class SearchRequest(BaseModel):
     message: str = Field(min_length=1, description="the raw client message")
     k: int = Field(default=3, ge=1, le=20)
+    # This endpoint has no auth (dev/testing only, see CLAUDE.local.md) — the
+    # caller must say which business's catalog to search.
+    business_id: uuid.UUID
 
 
 class CatalogItemOut(BaseModel):
